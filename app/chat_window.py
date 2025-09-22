@@ -238,18 +238,37 @@ class ChatWindow(QMainWindow):
             self._load_prompts()
             return
         entries = self.settings.prompts(self.lang)
+        # Remember current selection by pid if possible
+        prev_pid = None
+        cur_data = self.prompt_combo.currentData()
+        if isinstance(cur_data, tuple) and len(cur_data) == 2:
+            prev_pid = cur_data[0]
         self.prompt_combo.blockSignals(True)
         self.prompt_combo.clear()
         self.prompt_combo.addItem("(none)", userData=None)
         for pid, title, path in entries:
-            self.prompt_combo.addItem(title, userData=path)
+            self.prompt_combo.addItem(title, userData=(pid, path))
         self.prompt_combo.blockSignals(False)
+        # Restore selection by pid if possible
+        if prev_pid is not None:
+            for i in range(self.prompt_combo.count()):
+                data = self.prompt_combo.itemData(i)
+                if isinstance(data, tuple) and len(data) == 2 and data[0] == prev_pid:
+                    self.prompt_combo.setCurrentIndex(i)
+                    break
         self._on_prompt_selected(self.prompt_combo.currentIndex())
 
     def _on_prompt_selected(self, idx: int):
-        path = self.prompt_combo.currentData()
+        data = self.prompt_combo.currentData()
+        path = None
+        if isinstance(data, tuple) and len(data) == 2:
+            _, path = data
+        elif isinstance(data, str):
+            path = data
         if path:
             text = read_prompt(path)
+            # Filter multilingual prompt content by chosen language if file bundles multiple langs
+            text = self._filter_prompt_by_language(text, self.lang)
             self.current_system_prompt = text
             self.prompt_preview.setPlainText(text)
         else:
@@ -595,6 +614,39 @@ class ChatWindow(QMainWindow):
         self.lang = str(code)
         self._apply_language()
         self._load_prompts_from_settings()
+
+    @staticmethod
+    def _filter_prompt_by_language(text: str, lang: str) -> str:
+        """If a prompt file contains multiple language blocks separated by lines with '---',
+        try to pick the block matching the target language. Heuristic: choose the block with
+        more Cyrillic for ru; otherwise choose the block with fewer Cyrillic characters.
+        If no separators, return as is.
+        """
+        if not text:
+            return text
+        parts = []
+        cur = []
+        for line in text.splitlines():
+            if line.strip() == '---':
+                parts.append("\n".join(cur).strip())
+                cur = []
+            else:
+                cur.append(line)
+        if cur:
+            parts.append("\n".join(cur).strip())
+        if len(parts) <= 1:
+            return text
+        def cyr_ratio(s: str) -> float:
+            total = len(s)
+            if total == 0:
+                return 0.0
+            cyr = sum(1 for ch in s if 'А' <= ch <= 'я' or ch == 'ё' or ch == 'Ё')
+            return cyr / total
+        if (lang or '').lower() == 'ru':
+            parts_sorted = sorted(parts, key=cyr_ratio, reverse=True)
+        else:
+            parts_sorted = sorted(parts, key=cyr_ratio)  # prefer least Cyrillic
+        return parts_sorted[0]
 
     # --- Curiosity Drive fallback ---
     def on_cd_generate(self):
