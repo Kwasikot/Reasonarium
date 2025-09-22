@@ -8,10 +8,11 @@ from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QTextBrowser, QPlainTextEdit,
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
-    QGroupBox, QFormLayout, QMessageBox, QInputDialog
+    QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox
 )
 
-from app.prompts_loader import list_prompt_files, read_prompt
+from app.prompts_loader import read_prompt
+from app.settings_loader import Settings
 from llm.openai_client import LLMClient as OpenAIClient
 from llm.ollama_client import OllamaClient
 
@@ -48,10 +49,13 @@ class ChatWindow(QMainWindow):
         self.ollama_client: Optional[OllamaClient] = None
         self._stream_thread: Optional[QThread] = None
         self._stream_worker: Optional[StreamWorker] = None
+        self.settings = Settings()
+        self.lang = self.settings.default_language() if self.settings.ok() else "en"
 
         # UI
         self._build_ui()
-        self._load_prompts()
+        self._apply_language()
+        self._load_prompts_from_settings()
 
     # --- UI Construction ---
     def _build_ui(self):
@@ -59,9 +63,26 @@ class ChatWindow(QMainWindow):
         root = QVBoxLayout(central)
         self.setCentralWidget(central)
 
-        # Controls row
+        # Tab container
+        self.tabs = QTabWidget()
+        root.addWidget(self.tabs, stretch=1)
+
+        # Chat tab content container
+        chat_tab = QWidget()
+        chat_tab_layout = QVBoxLayout(chat_tab)
+        self.tabs.addTab(chat_tab, "Chat")
+
+        # Controls row (in chat tab)
         controls = QHBoxLayout()
-        root.addLayout(controls)
+        chat_tab_layout.addLayout(controls)
+
+        # Language selector
+        self.lang_combo = QComboBox()
+        # Will be populated in _apply_language()
+        self.lang_combo.currentIndexChanged.connect(self.on_language_changed)
+        self.lang_label = QLabel("Language:")
+        controls.addWidget(self.lang_label)
+        controls.addWidget(self.lang_combo)
 
         # Engine and model
         self.engine_combo = QComboBox()
@@ -74,24 +95,29 @@ class ChatWindow(QMainWindow):
         self.temp_spin.setSingleStep(0.1)
         self.temp_spin.setValue(1.0)
 
-        controls.addWidget(QLabel("Engine:"))
+        self.engine_label = QLabel("Engine:")
+        controls.addWidget(self.engine_label)
         controls.addWidget(self.engine_combo)
-        controls.addWidget(QLabel("Model:"))
+        self.model_label = QLabel("Model:")
+        controls.addWidget(self.model_label)
         controls.addWidget(self.model_edit)
-        controls.addWidget(QLabel("Temp:"))
+        self.temp_label = QLabel("Temp:")
+        controls.addWidget(self.temp_label)
         controls.addWidget(self.temp_spin)
 
         # API key input (OpenAI)
         self.api_key_edit = QLineEdit(os.getenv("OPENAI_API_KEY", ""))
         self.api_key_edit.setPlaceholderText("OPENAI_API_KEY")
         self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        controls.addWidget(QLabel("API Key:"))
+        self.api_key_label = QLabel("API Key:")
+        controls.addWidget(self.api_key_label)
         controls.addWidget(self.api_key_edit, stretch=1)
 
         # Optional proxy URL and trust_env toggle
         self.proxy_edit = QLineEdit(os.getenv("USEFULCLICKER_OPENAI_PROXY", ""))
         self.proxy_edit.setPlaceholderText("http(s)://user:pass@host:port (optional)")
-        controls.addWidget(QLabel("Proxy:"))
+        self.proxy_label = QLabel("Proxy:")
+        controls.addWidget(self.proxy_label)
         controls.addWidget(self.proxy_edit, stretch=1)
 
         # Test connection button
@@ -101,24 +127,17 @@ class ChatWindow(QMainWindow):
 
         # Modes
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems([
-            "General Chat",
-            "Rationality Drive",
-            "Philosophical Reflection",
-            "Virtual Opponent",
-            "Aggressive Opponent",
-            "Curiosity Drive",
-            "Technical Reflection",
-            "Popper Challenge",
-        ])
-        controls.addWidget(QLabel("Mode:"))
+        # items populated in _apply_language()
+        self.mode_label = QLabel("Mode:")
+        controls.addWidget(self.mode_label)
         controls.addWidget(self.mode_combo)
 
         # Prompts
         self.prompt_combo = QComboBox()
         self.reload_prompts_btn = QPushButton("Reload Prompts")
         self.reload_prompts_btn.clicked.connect(self._load_prompts)
-        controls.addWidget(QLabel("Prompt:"))
+        self.prompt_label = QLabel("Prompt:")
+        controls.addWidget(self.prompt_label)
         controls.addWidget(self.prompt_combo, stretch=1)
         controls.addWidget(self.reload_prompts_btn)
         self.start_session_btn = QPushButton("Start Session…")
@@ -127,7 +146,7 @@ class ChatWindow(QMainWindow):
 
         # Splitter: chat and prompt preview
         splitter = QSplitter(Qt.Orientation.Vertical)
-        root.addWidget(splitter, stretch=1)
+        chat_tab_layout.addWidget(splitter, stretch=1)
 
         # Chat area
         chat_box = QWidget()
@@ -153,25 +172,77 @@ class ChatWindow(QMainWindow):
         splitter.addWidget(chat_box)
 
         # Prompt preview panel
-        preview_box = QGroupBox("Prompt Preview")
-        pv_layout = QVBoxLayout(preview_box)
+        self.preview_box = QGroupBox("Prompt Preview")
+        pv_layout = QVBoxLayout(self.preview_box)
         self.prompt_preview = QPlainTextEdit()
         self.prompt_preview.setReadOnly(True)
         pv_layout.addWidget(self.prompt_preview)
 
-        splitter.addWidget(preview_box)
+        splitter.addWidget(self.preview_box)
         splitter.setSizes([500, 200])
 
         # Wire prompt selection
         self.prompt_combo.currentIndexChanged.connect(self._on_prompt_selected)
 
+        # --- Curiosity Drive tab ---
+        cd_tab = QWidget()
+        cd_layout = QVBoxLayout(cd_tab)
+        form = QFormLayout()
+        cd_layout.addLayout(form)
+
+        # Disciplines
+        self.cd_lbl_disciplines = QLabel("Disciplines")
+        self.cd_disc_combo = QComboBox()
+        form.addRow(self.cd_lbl_disciplines, self.cd_disc_combo)
+
+        # Audience / Rarity / Novelty / Count
+        self.cd_lbl_audience = QLabel("Audience")
+        self.cd_audience = QLineEdit("general")
+        form.addRow(self.cd_lbl_audience, self.cd_audience)
+        self.cd_lbl_rarity = QLabel("Rarity")
+        self.cd_rarity = QLineEdit("medium-rare")
+        form.addRow(self.cd_lbl_rarity, self.cd_rarity)
+        self.cd_lbl_novelty = QLabel("Novelty")
+        self.cd_novelty = QLineEdit("balanced")
+        form.addRow(self.cd_lbl_novelty, self.cd_novelty)
+        self.cd_lbl_count = QLabel("Items")
+        self.cd_count = QSpinBox()
+        self.cd_count.setRange(1, 50)
+        self.cd_count.setValue(5)
+        form.addRow(self.cd_lbl_count, self.cd_count)
+
+        self.cd_generate_btn = QPushButton("Generate")
+        self.cd_generate_btn.clicked.connect(self.on_cd_generate)
+        cd_layout.addWidget(self.cd_generate_btn)
+
+        self.cd_output = QPlainTextEdit()
+        self.cd_output.setReadOnly(True)
+        cd_layout.addWidget(self.cd_output, stretch=1)
+
+        self.tabs.addTab(cd_tab, "Curiosity Drive")
+
     def _load_prompts(self):
+        # Fallback scanner if settings are not used
+        from app.prompts_loader import list_prompt_files
         files = list_prompt_files()
         self.prompt_combo.blockSignals(True)
         self.prompt_combo.clear()
         self.prompt_combo.addItem("(none)", userData=None)
         for name, path in files:
             self.prompt_combo.addItem(name, userData=path)
+        self.prompt_combo.blockSignals(False)
+        self._on_prompt_selected(self.prompt_combo.currentIndex())
+
+    def _load_prompts_from_settings(self):
+        if not self.settings.ok():
+            self._load_prompts()
+            return
+        entries = self.settings.prompts(self.lang)
+        self.prompt_combo.blockSignals(True)
+        self.prompt_combo.clear()
+        self.prompt_combo.addItem("(none)", userData=None)
+        for pid, title, path in entries:
+            self.prompt_combo.addItem(title, userData=path)
         self.prompt_combo.blockSignals(False)
         self._on_prompt_selected(self.prompt_combo.currentIndex())
 
@@ -204,10 +275,10 @@ class ChatWindow(QMainWindow):
         # Ask for topic depending on mode
         mode = self.mode_combo.currentText()
         topic_title = {
-            "Virtual Opponent": "Введите тему дебатов",
-            "Aggressive Opponent": "Введите тему жёстких дебатов",
-            "Philosophical Reflection": "Введите тему философской беседы",
-        }.get(mode, "Введите тему (опционально)")
+            "mode.virtual": self._t("topic_virtual", "Enter debate topic"),
+            "mode.aggressive": self._t("topic_aggressive", "Enter aggressive debate topic"),
+            "mode.philosophy": self._t("topic_philo", "Enter philosophical topic"),
+        }.get(mode, self._t("topic_generic", "Enter topic (optional)"))
 
         topic, ok = QInputDialog.getText(self, "Reasonarium", topic_title)
         if not ok:
@@ -289,11 +360,13 @@ class ChatWindow(QMainWindow):
         self._start_stream(gen_factory)
 
     def _compose_system_prompt(self) -> str:
-        mode = self.mode_combo.currentText()
-        if mode == "General Chat":
+        mode_key = self.mode_combo.currentData() or "mode.general"
+        mode = str(mode_key)
+        if mode == "mode.general":
             return self.current_system_prompt
         # Prepend a lightweight mode header
-        header = f"[Mode: {mode}]\n"
+        header_name = self._t(mode)
+        header = f"[Mode: {header_name}]\n"
         return header + (self.current_system_prompt or "")
 
     # UI helpers
@@ -424,3 +497,143 @@ class ChatWindow(QMainWindow):
                 QMessageBox.warning(self, "OpenAI", "Received empty response.")
         except Exception as e:
             QMessageBox.critical(self, "OpenAI", f"Connection error: {e}")
+
+    # --- Language support ---
+    def _apply_language(self):
+        # Populate language combo
+        self.lang_combo.blockSignals(True)
+        self.lang_combo.clear()
+        langs = self.settings.languages() if self.settings.ok() else [("en", "English"), ("ru", "Русский")]
+        current_index = 0
+        for i, (code, name) in enumerate(langs):
+            self.lang_combo.addItem(name, userData=code)
+            if code == self.lang:
+                current_index = i
+        self.lang_combo.setCurrentIndex(current_index)
+        self.lang_combo.blockSignals(False)
+
+        # Update UI texts
+        self._apply_ui_texts()
+        # Populate disciplines for Curiosity tab
+        dis = self.settings.disciplines(self.lang) if self.settings.ok() else []
+        self.cd_disc_combo.clear()
+        if dis:
+            self.cd_disc_combo.addItem("(random)", userData=None)
+            for d in dis:
+                self.cd_disc_combo.addItem(d, userData=d)
+        else:
+            self.cd_disc_combo.addItem("(random)", userData=None)
+
+        # Modes localized
+        self._populate_modes()
+
+    def _populate_modes(self):
+        modes = [
+            ("mode.general", "General Chat"),
+            ("mode.rationality", "Rationality Drive"),
+            ("mode.philosophy", "Philosophical Reflection"),
+            ("mode.virtual", "Virtual Opponent"),
+            ("mode.aggressive", "Aggressive Opponent"),
+            ("mode.curiosity", "Curiosity Drive"),
+            ("mode.tech", "Technical Reflection"),
+            ("mode.popper", "Popper Challenge"),
+        ]
+        cur_key = self.mode_combo.currentData() or "mode.general"
+        self.mode_combo.blockSignals(True)
+        self.mode_combo.clear()
+        for key, fallback in modes:
+            self.mode_combo.addItem(self._t(key, fallback), userData=key)
+        # restore selection
+        for i in range(self.mode_combo.count()):
+            if self.mode_combo.itemData(i) == cur_key:
+                self.mode_combo.setCurrentIndex(i)
+                break
+        self.mode_combo.blockSignals(False)
+
+    def _apply_ui_texts(self):
+        t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
+        def tx(key: str, fallback: str) -> str:
+            return t.get(key) or fallback
+        self.lang_label.setText(tx("language", "Language"))
+        self.engine_label.setText(tx("engine", "Engine"))
+        self.model_label.setText(tx("model", "Model"))
+        self.temp_label.setText(tx("temp", "Temp"))
+        self.api_key_label.setText(tx("api_key", "API Key"))
+        self.proxy_label.setText(tx("proxy", "Proxy"))
+        self.mode_label.setText(tx("mode", "Mode"))
+        self.prompt_label.setText(tx("prompt", "Prompt"))
+        self.reload_prompts_btn.setText(tx("reload_prompts", "Reload Prompts"))
+        self.start_session_btn.setText(tx("start_session", "Start Session…"))
+        self.send_btn.setText(tx("send", "Send"))
+        self.new_btn.setText(tx("new_chat", "New Chat"))
+        self.preview_box.setTitle(tx("prompt_preview", "Prompt Preview"))
+        self.test_btn.setText(tx("test_openai", "Test OpenAI"))
+        # Tabs
+        self.tabs.setTabText(0, tx("tab_chat", "Chat"))
+        # Curiosity tab texts
+        # Find curiosity tab index (assumed 1)
+        self.tabs.setTabText(1, tx("tab_curiosity", "Curiosity Drive"))
+        # Curiosity labels (form created with static labels; adjust)
+        self.cd_lbl_disciplines.setText(tx("cd_disciplines", "Disciplines"))
+        self.cd_lbl_audience.setText(tx("cd_audience", "Audience"))
+        self.cd_lbl_rarity.setText(tx("cd_rarity", "Rarity"))
+        self.cd_lbl_novelty.setText(tx("cd_novelty", "Novelty"))
+        self.cd_lbl_count.setText(tx("cd_count", "Items"))
+        self.cd_audience.setPlaceholderText(tx("cd_audience", "Audience"))
+        self.cd_rarity.setPlaceholderText(tx("cd_rarity", "Rarity"))
+        self.cd_novelty.setPlaceholderText(tx("cd_novelty", "Novelty"))
+        self.cd_generate_btn.setText(tx("cd_generate", "Generate"))
+
+    def _t(self, key: str, fallback: Optional[str] = None) -> str:
+        t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
+        return t.get(key) or fallback or key
+
+    def on_language_changed(self, idx: int):
+        code = self.lang_combo.currentData()
+        if not code:
+            return
+        self.lang = str(code)
+        self._apply_language()
+        self._load_prompts_from_settings()
+
+    # --- Curiosity Drive fallback ---
+    def on_cd_generate(self):
+        import json, datetime, random
+        # disciplines from settings filtered by combo selection
+        dis_all = self.settings.disciplines(self.lang) if self.settings.ok() else []
+        pick = self.cd_disc_combo.currentData()
+        disciplines = dis_all if pick is None else [pick]
+        audience = (self.cd_audience.text() or "general").strip()
+        rarity = (self.cd_rarity.text() or "medium-rare").strip()
+        novelty = (self.cd_novelty.text() or "balanced").strip()
+        n = int(self.cd_count.value())
+
+        data = self._curiosity_fallback_json(disciplines, audience, rarity, novelty, n)
+        self.cd_output.setPlainText(json.dumps(data, ensure_ascii=False, indent=2))
+
+    def _curiosity_fallback_json(self, disciplines, audience, rarity, novelty, n):
+        # deterministic simple filler
+        import datetime, random
+        if not disciplines:
+            disciplines = ['General Science']
+        picked = random.choice(disciplines)
+        meta = {
+            "audience": audience,
+            "rarity": rarity,
+            "novelty": novelty,
+            "discipline_pool": disciplines,
+            "picked_discipline": picked,
+            "n": n,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        items = []
+        for i in range(n):
+            items.append({
+                'concept': f'{picked} concept {i+1}',
+                'rare_term': None,
+                'kid_gloss': f'A short explanation for item {i+1}',
+                'hook_question': f'What if {picked} {i+1}?',
+                'mini_task': f'Try a small experiment {i+1}',
+                'yt_query': f'{picked} intro'
+            })
+        return {'meta': meta, 'items': items}

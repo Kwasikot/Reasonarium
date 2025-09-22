@@ -142,3 +142,30 @@ UsefulPrompts\concept_rationality_drive.md
 Создай файл requirements.txt со списком pip пакетов для установки.
 Напиши ридми файл. Перечисли там команды для запуска и настройки пайтон среды.
 Ориентируемся на Python 3.11
+
+---
+Сделай настройки языка в программе.
+Пример файла настройки в settings/reasonarium_settings.xml.
+1. Тебе нужно перевести все промты на все языки.
+2. Сделать выпадающий combobox с выбором языка.
+3. Переводиться должны как промты так и все виджеты в главном окне.
+4. Сделай отдельную вкладку с формой для такой функции (Curiosity Drive)
+  def _curiosity_fallback_json(self, disciplines, audience, rarity, novelty, n):
+        # deterministic simple filler
+        import random
+        if not disciplines: disciplines = ['General Science']
+        picked = random.choice(disciplines)
+        meta = {"audience": audience, "rarity": rarity, "novelty": novelty, "discipline_pool": disciplines, "picked_discipline": picked, "n": n, "timestamp": datetime.datetime.now().isoformat()}
+        items = []
+        for i in range(n):
+            items.append({
+                'concept': f'{picked} concept {i+1}',
+                'rare_term': None,
+                'kid_gloss': f'A short explanation for item {i+1}',
+                'hook_question': f'What if {picked} {i+1}?',
+                'mini_task': f'Try a small experiment {i+1}',
+                'yt_query': f'{picked} intro'
+            })
+        return {'meta': meta, 'items': items}
+
+Промт и список дисциплин  возьми из файла reasonarium_settings.xml

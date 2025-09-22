@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <languages default="ru">
+    <lang code="en" name="English"/>
+    <lang code="ru" name="Русский"/>
+  </languages>
+
+  <ui_texts>
+    <lang code="en">
+      <text key="language">Language</text>
+      <text key="engine">Engine</text>
+      <text key="model">Model</text>
+      <text key="temp">Temp</text>
+      <text key="api_key">API Key</text>
+      <text key="proxy">Proxy</text>
+      <text key="mode">Mode</text>
+      <text key="prompt">Prompt</text>
+      <text key="reload_prompts">Reload Prompts</text>
+      <text key="start_session">Start Session…</text>
+      <text key="send">Send</text>
+      <text key="new_chat">New Chat</text>
+      <text key="prompt_preview">Prompt Preview</text>
+      <text key="tab_chat">Chat</text>
+      <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="cd_generate">Generate</text>
+      <text key="cd_audience">Audience</text>
+      <text key="cd_rarity">Rarity</text>
+      <text key="cd_novelty">Novelty</text>
+      <text key="cd_count">Items</text>
+      <text key="cd_disciplines">Disciplines</text>
+      <text key="topic_virtual">Enter debate topic</text>
+      <text key="topic_aggressive">Enter aggressive debate topic</text>
+      <text key="topic_philo">Enter philosophical topic</text>
+      <text key="topic_generic">Enter topic (optional)</text>
+      <text key="test_openai">Test OpenAI</text>
+      <!-- Modes (display names) -->
+      <text key="mode.general">General Chat</text>
+      <text key="mode.rationality">Rationality Drive</text>
+      <text key="mode.philosophy">Philosophical Reflection</text>
+      <text key="mode.virtual">Virtual Opponent</text>
+      <text key="mode.aggressive">Aggressive Opponent</text>
+      <text key="mode.curiosity">Curiosity Drive</text>
+      <text key="mode.tech">Technical Reflection</text>
+      <text key="mode.popper">Popper Challenge</text>
+    </lang>
+    <lang code="ru">
+      <text key="language">Язык</text>
+      <text key="engine">Движок</text>
+      <text key="model">Модель</text>
+      <text key="temp">Темп</text>
+      <text key="api_key">API ключ</text>
+      <text key="proxy">Прокси</text>
+      <text key="mode">Режим</text>
+      <text key="prompt">Промт</text>
+      <text key="reload_prompts">Обновить промты</text>
+      <text key="start_session">Начать сессию…</text>
+      <text key="send">Отправить</text>
+      <text key="new_chat">Новый чат</text>
+      <text key="prompt_preview">Предпросмотр промта</text>
+      <text key="tab_chat">Чат</text>
+      <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="cd_generate">Сгенерировать</text>
+      <text key="cd_audience">Аудитория</text>
+      <text key="cd_rarity">Редкость</text>
+      <text key="cd_novelty">Новизна</text>
+      <text key="cd_count">Количество</text>
+      <text key="cd_disciplines">Дисциплины</text>
+      <text key="topic_virtual">Введите тему дебатов</text>
+      <text key="topic_aggressive">Введите тему жёстких дебатов</text>
+      <text key="topic_philo">Введите тему философской беседы</text>
+      <text key="topic_generic">Введите тему (опционально)</text>
+      <text key="test_openai">Проверить OpenAI</text>
+      <!-- Modes (display names) -->
+      <text key="mode.general">Обычный чат</text>
+      <text key="mode.rationality">Rationality Drive</text>
+      <text key="mode.philosophy">Философская рефлексия</text>
+      <text key="mode.virtual">Виртуальный оппонент</text>
+      <text key="mode.aggressive">Агрессивный оппонент</text>
+      <text key="mode.curiosity">Curiosity Drive</text>
+      <text key="mode.tech">Техническая рефлексия</text>
+      <text key="mode.popper">Вызов Поппера</text>
+    </lang>
+  </ui_texts>
+
+  <prompts>
+    <prompt id="virtual_opponent">
+      <title lang="en">Virtual Opponent</title>
+      <title lang="ru">Виртуальный оппонент</title>
+      <file lang="en">UsefulPrompts/virtual_opponent_gpt_prompt.MD</file>
+      <file lang="ru">UsefulPrompts/ru/virtual_opponent_gpt_prompt_rus.MD</file>
+    </prompt>
+    <prompt id="aggressive_opponent">
+      <title lang="en">Aggressive Debate Opponent</title>
+      <title lang="ru">Агрессивный оппонент</title>
+      <file lang="en">UsefulPrompts/Prompt for ChatGPT — Aggressive Debate Opponent.MD</file>
+      <file lang="ru">UsefulPrompts/Prompt for ChatGPT — Aggressive Debate Opponent.MD</file>
+    </prompt>
+    <prompt id="philosophy_reflection">
+      <title lang="en">Philosophical Reflection</title>
+      <title lang="ru">Философская рефлексия</title>
+      <file lang="en">UsefulPrompts/Philosophical_Prompt_AI_Reflection.md</file>
+      <file lang="ru">UsefulPrompts/ru/virtual_opponent_gpt_prompt_rus.MD</file>
+    </prompt>
+    <prompt id="curiosity_drive">
+      <title lang="en">Curiosity Drive</title>
+      <title lang="ru">Curiosity Drive</title>
+      <file lang="en">UsefulPrompts/gpt5_prompt_rationality_drive_v3.md</file>
+      <file lang="ru">UsefulPrompts/ru/gpt5_prompt_rationality_drive_v3.md</file>
+    </prompt>
+  </prompts>
+
+  <disciplines>
+    <lang code="en">
+      <item>Physics</item>
+      <item>Mathematics</item>
+      <item>Computer Science</item>
+      <item>Biology</item>
+      <item>Philosophy</item>
+      <item>Economics</item>
+      <item>Psychology</item>
+      <item>History</item>
+    </lang>
+    <lang code="ru">
+      <item>Физика</item>
+      <item>Математика</item>
+      <item>Информатика</item>
+      <item>Биология</item>
+      <item>Философия</item>
+      <item>Экономика</item>
+      <item>Психология</item>
+      <item>История</item>
+    </lang>
+  </disciplines>
+</settings>
