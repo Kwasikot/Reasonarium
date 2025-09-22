@@ -169,6 +169,11 @@ class ChatWindow(QMainWindow):
         chat_box = QWidget()
         chat_layout = QVBoxLayout(chat_box)
         self.chat_view = QTextBrowser()
+        # Increase font size for LLM output area
+        try:
+            self.chat_view.setStyleSheet("font-size: 14pt;")
+        except Exception:
+            pass
         self.chat_view.setOpenExternalLinks(True)
         self.chat_view.setReadOnly(True)
         chat_layout.addWidget(self.chat_view, stretch=1)
@@ -461,7 +466,7 @@ class ChatWindow(QMainWindow):
             m = re_a.match(ln)
             if m:
                 body = self._escape(m.group(1))
-                out.append(f"<div style='color:#d32f2f'><b>A:</b> {body}</div>")
+                out.append(f"<div style='color:#fbc02d'><b>A:</b> {body}</div>")
                 continue
             m = re_b.match(ln)
             if m:
