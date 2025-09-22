@@ -4,5 +4,7 @@ openai>=1.40
 python-dotenv>=1.0
 rich>=13.7
 sounddevice>=0.4
-numpy>=1.26
-whisper>=1.1.10
+# Whisper needs modern NumPy; align with 2.2+
+numpy>=2.2,<2.3
+# Whisper package name on PyPI is openai-whisper; import remains `whisper`
+openai-whisper>=20231117
