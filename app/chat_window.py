@@ -55,6 +55,7 @@ class ChatWindow(QMainWindow):
         # UI
         self._build_ui()
         self._apply_language()
+        self._populate_openai_models()
         self._load_prompts_from_settings()
 
     # --- UI Construction ---
@@ -89,7 +90,8 @@ class ChatWindow(QMainWindow):
         self.engine_combo.addItems(["OpenAI", "Ollama"])
         self.engine_combo.setCurrentIndex(0)
 
-        self.model_edit = QLineEdit(os.getenv("USEFULCLICKER_OPENAI_MODEL", "gpt-4o-mini"))
+        self.model_combo = QComboBox()
+        self.model_combo.setEditable(True)
         self.temp_spin = QDoubleSpinBox()
         self.temp_spin.setRange(0.0, 2.0)
         self.temp_spin.setSingleStep(0.1)
@@ -100,7 +102,7 @@ class ChatWindow(QMainWindow):
         controls.addWidget(self.engine_combo)
         self.model_label = QLabel("Model:")
         controls.addWidget(self.model_label)
-        controls.addWidget(self.model_edit)
+        controls.addWidget(self.model_combo)
         self.temp_label = QLabel("Temp:")
         controls.addWidget(self.temp_label)
         controls.addWidget(self.temp_spin)
@@ -456,7 +458,7 @@ class ChatWindow(QMainWindow):
     # --- LLM streaming factory ---
     def _make_stream_factory(self) -> Callable[[], Iterator[str]]:
         engine = self.engine_combo.currentText()
-        model = (self.model_edit.text() or "").strip() or None
+        model = (self.model_combo.currentText() or "").strip() or None
         temp = float(self.temp_spin.value())
         messages = list(self.messages)  # copy current history
 
@@ -504,7 +506,7 @@ class ChatWindow(QMainWindow):
             client = OpenAIClient()
             txt = client.generate_chat([
                 {"role": "user", "content": "Reply with: pong"}
-            ], model=(self.model_edit.text() or None), temperature=0)
+            ], model=(self.model_combo.currentText() or None), temperature=0)
             if txt:
                 QMessageBox.information(self, "OpenAI", f"OK: {txt[:200]}")
             else:
@@ -528,6 +530,8 @@ class ChatWindow(QMainWindow):
 
         # Update UI texts
         self._apply_ui_texts()
+        # Refresh OpenAI models (in case language switch requires different defaults later)
+        self._populate_openai_models()
         # Populate disciplines for Curiosity tab
         dis = self.settings.disciplines(self.lang) if self.settings.ok() else []
         self.cd_disc_combo.clear()
@@ -575,6 +579,21 @@ class ChatWindow(QMainWindow):
         self.cd_rarity.setPlaceholderText(tx("cd_rarity", "Rarity"))
         self.cd_novelty.setPlaceholderText(tx("cd_novelty", "Novelty"))
         self.cd_generate_btn.setText(tx("cd_generate", "Generate"))
+
+    def _populate_openai_models(self):
+        # Populate with settings; allow custom entry via editable combo
+        models = self.settings.openai_models() if self.settings.ok() else []
+        current = (self.model_combo.currentText() or "").strip()
+        env_default = os.getenv("USEFULCLICKER_OPENAI_MODEL", "")
+        xml_default = self.settings.default_openai_model() if self.settings.ok() else None
+        self.model_combo.blockSignals(True)
+        self.model_combo.clear()
+        if models:
+            self.model_combo.addItems(models)
+        # Set initial text/selection priority: env var > xml default > existing > hardcoded
+        target = env_default or (xml_default or current) or "gpt-4o-mini"
+        self.model_combo.setEditText(target)
+        self.model_combo.blockSignals(False)
 
     def _t(self, key: str, fallback: Optional[str] = None) -> str:
         t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}

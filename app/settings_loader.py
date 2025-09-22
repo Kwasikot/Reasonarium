@@ -126,3 +126,25 @@ class Settings:
                     items.append(val)
         return items
 
+    def openai_models(self) -> List[str]:
+        root = self._root
+        out: List[str] = []
+        if root is None:
+            return out
+        mroot = root.find("openai_models")
+        if mroot is None:
+            return out
+        for it in mroot.findall("model"):
+            val = (it.text or "").strip()
+            if val:
+                out.append(val)
+        return out
+
+    def default_openai_model(self) -> Optional[str]:
+        root = self._root
+        if root is None:
+            return None
+        mroot = root.find("openai_models")
+        if mroot is None:
+            return None
+        return mroot.get("default")
