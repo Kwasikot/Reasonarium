@@ -196,13 +196,9 @@ class ChatWindow(QMainWindow):
         self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
-        # Speech-to-text button
-        self.stt_btn = QPushButton("Speech to text")
-        self.stt_btn.clicked.connect(self.on_speech_to_text)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
-        input_row.addWidget(self.stt_btn)
         chat_layout.addLayout(input_row)
         # Microphone row: selector + Record toggle (sounddevice backend)
         mic_row = QHBoxLayout()
@@ -776,7 +772,6 @@ class ChatWindow(QMainWindow):
         self.new_btn.setText(tx("new_chat", "New Chat"))
         self.preview_box.setTitle(tx("prompt_preview", "Prompt Preview"))
         self.test_btn.setText(tx("test_openai", "Test OpenAI"))
-        self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
         # Tabs
         self.tabs.setTabText(0, tx("tab_chat", "Chat"))
         # Curiosity tab texts
@@ -792,9 +787,7 @@ class ChatWindow(QMainWindow):
         self.cd_rarity.setPlaceholderText(tx("cd_rarity", "Rarity"))
         self.cd_novelty.setPlaceholderText(tx("cd_novelty", "Novelty"))
         self.cd_generate_btn.setText(tx("cd_generate", "Generate"))
-        # STT/Mic controls
-        if hasattr(self, 'stt_btn'):
-            self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
+        # Mic controls
         if hasattr(self, 'mic_label'):
             self.mic_label.setText(tx("microphone", "Microphone"))
         if hasattr(self, 'record_btn'):
