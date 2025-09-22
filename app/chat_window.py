@@ -11,6 +11,8 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
     QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox
 )
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtCore import QUrl
 
 from app.prompts_loader import read_prompt
 from app.settings_loader import Settings
@@ -176,9 +178,19 @@ class ChatWindow(QMainWindow):
         self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
+        # Voice controls
+        from PyQt6.QtWidgets import QCheckBox
+        self.voice_check = QCheckBox("Voice mode")
+        self.voice_speak_btn = QPushButton("Speak…")
+        self.voice_speak_btn.clicked.connect(self.on_voice_speak)
+        self.voice_read_btn = QPushButton("Read aloud")
+        self.voice_read_btn.clicked.connect(self.on_voice_read)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
+        input_row.addWidget(self.voice_check)
+        input_row.addWidget(self.voice_speak_btn)
+        input_row.addWidget(self.voice_read_btn)
         chat_layout.addLayout(input_row)
 
         splitter.addWidget(chat_box)
@@ -558,6 +570,83 @@ class ChatWindow(QMainWindow):
                 QMessageBox.warning(self, "OpenAI", "Received empty response.")
         except Exception as e:
             QMessageBox.critical(self, "OpenAI", f"Connection error: {e}")
+
+    # --- Voice mode ---
+    def on_voice_speak(self):
+        # Lazy init media objects (playback)
+        if self.media_player is None:
+            self.media_player = QMediaPlayer(self)
+            self.audio_output = QAudioOutput(self)
+            self.media_player.setAudioOutput(self.audio_output)
+        if self.engine_combo.currentText() != "OpenAI":
+            QMessageBox.information(self, "Voice", "Voice mode uses OpenAI for now.")
+            return
+        if self.openai_client is None:
+            try:
+                self.openai_client = OpenAIClient()
+            except Exception as e:
+                QMessageBox.critical(self, "Voice", f"OpenAI init failed: {e}")
+                return
+        # Pick an audio file to transcribe
+        path, _ = QFileDialog.getOpenFileName(self, self._t("speak", "Speak…"), "", "Audio Files (*.wav *.mp3 *.m4a *.ogg)")
+        if not path:
+            return
+        try:
+            text = self.openai_client.transcribe_file(path)
+        except Exception as e:
+            QMessageBox.critical(self, "Transcribe", f"Failed: {e}")
+            return
+        if not text:
+            QMessageBox.information(self, "Transcribe", "No speech recognized.")
+            return
+        self.input_edit.setPlainText(text)
+        if self.voice_check.isChecked():
+            self.on_send()
+
+    def on_voice_read(self):
+        if self.media_player is None:
+            self.media_player = QMediaPlayer(self)
+            self.audio_output = QAudioOutput(self)
+            self.media_player.setAudioOutput(self.audio_output)
+        if self.engine_combo.currentText() != "OpenAI":
+            QMessageBox.information(self, "Voice", "Voice mode uses OpenAI for now.")
+            return
+        if self.openai_client is None:
+            try:
+                self.openai_client = OpenAIClient()
+            except Exception as e:
+                QMessageBox.critical(self, "Voice", f"OpenAI init failed: {e}")
+                return
+        last_assistant = None
+        for m in reversed(self.messages):
+            if m.get("role") == "assistant" and m.get("content"):
+                last_assistant = m["content"]
+                break
+        if not last_assistant:
+            QMessageBox.information(self, "Voice", "No assistant message to read.")
+            return
+        import tempfile, os
+        fd, tmp_path = tempfile.mkstemp(suffix=".mp3")
+        os.close(fd)
+        try:
+            self.openai_client.tts_synthesize(last_assistant, tmp_path)
+        except Exception as e:
+            QMessageBox.critical(self, "TTS", f"Failed: {e}")
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            return
+        try:
+            self.media_player.setSource(QUrl.fromLocalFile(tmp_path))
+            self.media_player.play()
+            self._last_tts_path = tmp_path
+        except Exception as e:
+            QMessageBox.critical(self, "Audio", f"Playback failed: {e}")
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
 
     # --- Language support ---
     def _apply_language(self):

@@ -22,6 +22,9 @@
       <text key="prompt_preview">Prompt Preview</text>
       <text key="tab_chat">Chat</text>
       <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="voice_mode">Voice mode</text>
+      <text key="speak">Speak…</text>
+      <text key="read_aloud">Read aloud</text>
       <text key="cd_generate">Generate</text>
       <text key="cd_audience">Audience</text>
       <text key="cd_rarity">Rarity</text>
@@ -59,6 +62,9 @@
       <text key="prompt_preview">Предпросмотр промта</text>
       <text key="tab_chat">Чат</text>
       <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="voice_mode">Голосовой режим</text>
+      <text key="speak">Говорить…</text>
+      <text key="read_aloud">Озвучить</text>
       <text key="cd_generate">Сгенерировать</text>
       <text key="cd_audience">Аудитория</text>
       <text key="cd_rarity">Редкость</text>

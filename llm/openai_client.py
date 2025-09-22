@@ -107,3 +107,59 @@ class LLMClient:
             except Exception:
                 # Be tolerant to schema drift
                 continue
+
+    # --- Audio APIs ---
+    def transcribe_file(self, file_path: str, model: Optional[str] = None) -> str:
+        """Transcribe an audio file using OpenAI transcription model.
+        Prefers gpt-4o-mini-transcribe if available, falls back to whisper-1.
+        """
+        use_model = model or os.getenv("USEFULCLICKER_OPENAI_STT_MODEL", "gpt-4o-mini-transcribe")
+        try:
+            with open(file_path, 'rb') as f:
+                resp = self.client.audio.transcriptions.create(model=use_model, file=f)
+            # SDK typically returns an object with .text
+            text = getattr(resp, 'text', None)
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+        except Exception:
+            # Fallback to whisper-1
+            try:
+                with open(file_path, 'rb') as f:
+                    resp = self.client.audio.transcriptions.create(model='whisper-1', file=f)
+                text = getattr(resp, 'text', None)
+                if isinstance(text, str) and text.strip():
+                    return text.strip()
+            except Exception as e:
+                raise RuntimeError(f"Transcription failed: {e}")
+        return ""
+
+    def tts_synthesize(self, text: str, out_path: str, voice: Optional[str] = None, model: Optional[str] = None, format: str = 'mp3') -> str:
+        """Synthesize speech to out_path. Returns the file path."""
+        use_model = model or os.getenv("USEFULCLICKER_OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
+        use_voice = voice or os.getenv("USEFULCLICKER_OPENAI_TTS_VOICE", "alloy")
+        try:
+            # Try streaming-to-file API
+            with self.client.audio.speech.with_streaming_response.create(
+                model=use_model,
+                voice=use_voice,
+                input=text,
+                format=format,
+            ) as resp:
+                resp.stream_to_file(out_path)
+            return out_path
+        except Exception:
+            # Fallback non-streaming
+            try:
+                resp = self.client.audio.speech.create(model=use_model, voice=use_voice, input=text, format=format)
+                # Some SDKs use .content
+                data = getattr(resp, 'content', None)
+                if data is None and hasattr(resp, 'read'):
+                    data = resp.read()
+                if data is None:
+                    # Last resort: write str(resp)
+                    data = bytes(str(resp), 'utf-8')
+                with open(out_path, 'wb') as f:
+                    f.write(data)
+                return out_path
+            except Exception as e:
+                raise RuntimeError(f"TTS failed: {e}")
