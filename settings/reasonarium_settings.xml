@@ -4,22 +4,7 @@
     <lang code="en" name="English"/>
     <lang code="ru" name="Русский"/>
   </languages>
-    <!-- OpenAI model list (static) -->
-    <openai>
-      <models>
-        <model>gpt-5</model>
-        <model>gpt-5-mini</model>
-        <model>gpt-5-nano</model>
-        <model>o4-mini</model>
-        <model>o3</model>
-        <model>o3-mini</model>
-        <model>gpt-4.1</model>
-        <model>gpt-4.1-mini</model>
-        <model>gpt-4.1-nano</model>
-        <model>gpt-4o</model>
-        <model>gpt-4o-mini</model>
-      </models>
-    </openai>
+ 
   <ui_texts>
     <lang code="en">
       <text key="language">Language</text>
@@ -149,6 +134,8 @@
 
   <openai_models default="gpt-4o-mini">
     <model>gpt-5</model>
+    <model>gpt-5-mini</model>
+    <model>gpt-5-nano</model>
     <model>gpt-4o-mini</model>
     <model>gpt-4o</model>
     <model>gpt-4.1-mini</model>
