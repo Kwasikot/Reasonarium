@@ -145,6 +145,21 @@
       <item>История</item>
     </lang>
   </disciplines>
+  <!-- Ollama models fetched via HTTP (runtime). 
+         Your app can GET http://localhost:11434/api/tags and populate this list. -->
+    <ollama endpoint="http://localhost:11434" refresh_on_start="true">
+      <models source="http" url="http://localhost:11434/api/tags"/>
+      <!-- Optional fallback (static examples) -->
+      <fallback_models>
+        <model>llama3.2:latest</model>
+        <model>llama3.1:8b</model>
+        <model>llama3:70b</model>
+        <model>mistral:latest</model>
+        <model>qwen2.5:7b</model>
+        <model>phi3:mini</model>
+      </fallback_models>
+    </ollama>
+
 
   <openai_models default="gpt-4o-mini">
     <model>gpt-5</model>

@@ -148,3 +148,61 @@ class Settings:
         if mroot is None:
             return None
         return mroot.get("default")
+
+    # --- Ollama settings ---
+    def ollama_endpoint(self) -> Optional[str]:
+        root = self._root
+        if root is None:
+            return None
+        node = root.find("ollama")
+        if node is None:
+            return None
+        return node.get("endpoint") or "http://localhost:11434"
+
+    def ollama_models(self) -> List[str]:
+        """Return list of Ollama models. Try HTTP /api/tags if declared, else fallback list."""
+        root = self._root
+        out: List[str] = []
+        if root is None:
+            return out
+        onode = root.find("ollama")
+        if onode is None:
+            return out
+        # Try HTTP source
+        src = onode.find("models")
+        if src is not None and (src.get("source") or "") == "http":
+            url = src.get("url") or ""
+            if url:
+                try:
+                    import httpx
+                    r = httpx.get(url, timeout=5.0)
+                    r.raise_for_status()
+                    data = r.json()
+                    # Expecting {models:[{name:..}, ...]} or list
+                    if isinstance(data, dict) and "models" in data:
+                        items = data.get("models") or []
+                    else:
+                        items = data
+                    names = []
+                    for it in items or []:
+                        name = None
+                        if isinstance(it, dict):
+                            name = it.get("name") or it.get("model")
+                        elif isinstance(it, str):
+                            name = it
+                        if name and name not in names:
+                            names.append(name)
+                    if names:
+                        out = names
+                except Exception:
+                    # Ignore fetch errors; fall back below
+                    pass
+        # Fallback models
+        if not out:
+            fnode = onode.find("fallback_models")
+            if fnode is not None:
+                for it in fnode.findall("model"):
+                    val = (it.text or "").strip()
+                    if val:
+                        out.append(val)
+        return out

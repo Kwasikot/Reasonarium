@@ -118,9 +118,11 @@ class ChatWindow(QMainWindow):
         self.engine_combo = QComboBox()
         self.engine_combo.addItems(["OpenAI", "Ollama"])
         self.engine_combo.setCurrentIndex(0)
+        self.engine_combo.currentTextChanged.connect(self.on_engine_changed)
 
         self.model_combo = QComboBox()
         self.model_combo.setEditable(True)
+        self.model_combo.editTextChanged.connect(self.on_model_changed)
         self.temp_spin = QDoubleSpinBox()
         self.temp_spin.setRange(0.0, 2.0)
         self.temp_spin.setSingleStep(0.1)
@@ -821,9 +823,54 @@ class ChatWindow(QMainWindow):
         self.model_combo.setEditText(target)
         self.model_combo.blockSignals(False)
 
+    def _populate_ollama_models(self):
+        models = self.settings.ollama_models() if self.settings.ok() else []
+        # Set Ollama base URL to env for client
+        base = self.settings.ollama_endpoint() if self.settings.ok() else None
+        if base:
+            os.environ["USEFULCLICKER_OLLAMA_BASE"] = base
+        current = (self.model_combo.currentText() or "").strip()
+        env_default = os.getenv("USEFULCLICKER_OLLAMA_MODEL", "")
+        self.model_combo.blockSignals(True)
+        self.model_combo.clear()
+        if models:
+            self.model_combo.addItems(models)
+        target = env_default or (models[0] if models else current) or "llama3.2:latest"
+        self.model_combo.setEditText(target)
+        self.model_combo.blockSignals(False)
+
+    def on_engine_changed(self, value: str):
+        eng = (value or "").strip().lower()
+        if eng == "openai":
+            self._populate_openai_models()
+        elif eng == "ollama":
+            self._populate_ollama_models()
+        else:
+            pass
+
     def _t(self, key: str, fallback: Optional[str] = None) -> str:
         t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
         return t.get(key) or fallback or key
+
+    def on_model_changed(self, text: str):
+        name = (text or "").strip()
+        if not name:
+            return
+        # Heuristic engine switch based on known lists and tag pattern
+        try:
+            ollama_list = set(self.settings.ollama_models() or []) if self.settings.ok() else set()
+        except Exception:
+            ollama_list = set()
+        try:
+            openai_list = set(self.settings.openai_models() or []) if self.settings.ok() else set()
+        except Exception:
+            openai_list = set()
+        if name in ollama_list or ":" in name:
+            if self.engine_combo.currentText() != "Ollama":
+                self.engine_combo.setCurrentText("Ollama")
+        elif name in openai_list:
+            if self.engine_combo.currentText() != "OpenAI":
+                self.engine_combo.setCurrentText("OpenAI")
 
     def on_language_changed(self, idx: int):
         code = self.lang_combo.currentData()
