@@ -17,6 +17,7 @@ from app.prompts_loader import read_prompt
 from app.settings_loader import Settings
 from llm.openai_client import LLMClient as OpenAIClient
 from app.audio_recorder import AudioRecorder
+from app.local_stt import transcribe_whisper
 from llm.ollama_client import OllamaClient
 
 
@@ -687,9 +688,16 @@ class ChatWindow(QMainWindow):
             self.record_btn.setText(self._t("record", "Record"))
             if path and os.path.exists(path):
                 try:
-                    if self.openai_client is None:
-                        self.openai_client = OpenAIClient()
-                    text = self.openai_client.transcribe_file(path)
+                    text = ""
+                    if self.engine_combo.currentText().strip().lower() == "ollama":
+                        # Local STT via Whisper for Ollama engine
+                        # Choose language hint from UI language
+                        lang_hint = 'ru' if (self.lang or '').lower() == 'ru' else 'en'
+                        text = transcribe_whisper(path, model=os.getenv('WHISPER_MODEL', 'base'), language=lang_hint)
+                    else:
+                        if self.openai_client is None:
+                            self.openai_client = OpenAIClient()
+                        text = self.openai_client.transcribe_file(path)
                     if text:
                         self.input_edit.setPlainText(text)
                     else:

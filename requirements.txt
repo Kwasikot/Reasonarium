@@ -5,3 +5,4 @@ python-dotenv>=1.0
 rich>=13.7
 sounddevice>=0.4
 numpy>=1.26
+whisper>=1.1.10
