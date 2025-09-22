@@ -187,19 +187,9 @@ class ChatWindow(QMainWindow):
         self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
-        # Voice controls
-        from PyQt6.QtWidgets import QCheckBox
-        self.voice_check = QCheckBox("Voice mode")
-        self.voice_speak_btn = QPushButton("Speak…")
-        self.voice_speak_btn.clicked.connect(self.on_voice_speak)
-        self.voice_read_btn = QPushButton("Read aloud")
-        self.voice_read_btn.clicked.connect(self.on_voice_read)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
-        input_row.addWidget(self.voice_check)
-        input_row.addWidget(self.voice_speak_btn)
-        input_row.addWidget(self.voice_read_btn)
         chat_layout.addLayout(input_row)
 
         splitter.addWidget(chat_box)
