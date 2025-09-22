@@ -101,11 +101,11 @@
       <file lang="en">UsefulPrompts/Philosophical_Prompt_AI_Reflection.md</file>
       <file lang="ru">UsefulPrompts/Philosophical_Prompt_AI_Reflection.md</file>
     </prompt>
-    <prompt id="curiosity_drive">
-      <title lang="en">Curiosity Drive</title>
-      <title lang="ru">Curiosity Drive</title>
-      <file lang="en">UsefulPrompts/gpt5_prompt_rationality_drive_v3.md</file>
-      <file lang="ru">UsefulPrompts/ru/gpt5_prompt_rationality_drive_v3.md</file>
+    <prompt id="rationality_drive">
+      <title lang="en">Rationality Drive</title>
+      <title lang="ru">Rationality Drive</title>
+      <file lang="en">UsefulPrompts/concept_rationality_drive.md</file>
+      <file lang="ru">UsefulPrompts/ru/concept_rationality_drive.md</file>
     </prompt>
   </prompts>
 

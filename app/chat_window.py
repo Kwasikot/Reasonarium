@@ -125,17 +125,12 @@ class ChatWindow(QMainWindow):
         self.test_btn.clicked.connect(self.on_test_openai)
         controls.addWidget(self.test_btn)
 
-        # Modes
-        self.mode_combo = QComboBox()
-        # items populated in _apply_language()
-        self.mode_label = QLabel("Mode:")
-        controls.addWidget(self.mode_label)
-        controls.addWidget(self.mode_combo)
+        # (Mode selector removed)
 
         # Prompts
         self.prompt_combo = QComboBox()
         self.reload_prompts_btn = QPushButton("Reload Prompts")
-        self.reload_prompts_btn.clicked.connect(self._load_prompts)
+        self.reload_prompts_btn.clicked.connect(self._load_prompts_from_settings)
         self.prompt_label = QLabel("Prompt:")
         controls.addWidget(self.prompt_label)
         controls.addWidget(self.prompt_combo, stretch=1)
@@ -291,13 +286,16 @@ class ChatWindow(QMainWindow):
             self._append_info("Select a prompt first or proceed with General Chat via Send.")
             return
 
-        # Ask for topic depending on mode
-        mode = self.mode_combo.currentText()
-        topic_title = {
-            "mode.virtual": self._t("topic_virtual", "Enter debate topic"),
-            "mode.aggressive": self._t("topic_aggressive", "Enter aggressive debate topic"),
-            "mode.philosophy": self._t("topic_philo", "Enter philosophical topic"),
-        }.get(mode, self._t("topic_generic", "Enter topic (optional)"))
+        # Ask for topic depending on selected prompt id
+        pdata = self.prompt_combo.currentData()
+        pid = pdata[0] if isinstance(pdata, tuple) and len(pdata) == 2 else None
+        topic_title = self._t("topic_generic", "Enter topic (optional)")
+        if pid == "virtual_opponent":
+            topic_title = self._t("topic_virtual", "Enter debate topic")
+        elif pid == "aggressive_opponent":
+            topic_title = self._t("topic_aggressive", "Enter aggressive debate topic")
+        elif pid == "philosophy_reflection":
+            topic_title = self._t("topic_philo", "Enter philosophical topic")
 
         topic, ok = QInputDialog.getText(self, "Reasonarium", topic_title)
         if not ok:
@@ -379,14 +377,8 @@ class ChatWindow(QMainWindow):
         self._start_stream(gen_factory)
 
     def _compose_system_prompt(self) -> str:
-        mode_key = self.mode_combo.currentData() or "mode.general"
-        mode = str(mode_key)
-        if mode == "mode.general":
-            return self.current_system_prompt
-        # Prepend a lightweight mode header
-        header_name = self._t(mode)
-        header = f"[Mode: {header_name}]\n"
-        return header + (self.current_system_prompt or "")
+        # No mode header; just return the selected system prompt
+        return self.current_system_prompt
 
     # UI helpers
     def _append_info(self, text: str):
@@ -543,31 +535,10 @@ class ChatWindow(QMainWindow):
         else:
             self.cd_disc_combo.addItem("(random)", userData=None)
 
-        # Modes localized
-        self._populate_modes()
+        # No mode selector
 
-    def _populate_modes(self):
-        modes = [
-            ("mode.general", "General Chat"),
-            ("mode.rationality", "Rationality Drive"),
-            ("mode.philosophy", "Philosophical Reflection"),
-            ("mode.virtual", "Virtual Opponent"),
-            ("mode.aggressive", "Aggressive Opponent"),
-            ("mode.curiosity", "Curiosity Drive"),
-            ("mode.tech", "Technical Reflection"),
-            ("mode.popper", "Popper Challenge"),
-        ]
-        cur_key = self.mode_combo.currentData() or "mode.general"
-        self.mode_combo.blockSignals(True)
-        self.mode_combo.clear()
-        for key, fallback in modes:
-            self.mode_combo.addItem(self._t(key, fallback), userData=key)
-        # restore selection
-        for i in range(self.mode_combo.count()):
-            if self.mode_combo.itemData(i) == cur_key:
-                self.mode_combo.setCurrentIndex(i)
-                break
-        self.mode_combo.blockSignals(False)
+    # def _populate_modes(self):
+    #     pass
 
     def _apply_ui_texts(self):
         t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
@@ -579,7 +550,6 @@ class ChatWindow(QMainWindow):
         self.temp_label.setText(tx("temp", "Temp"))
         self.api_key_label.setText(tx("api_key", "API Key"))
         self.proxy_label.setText(tx("proxy", "Proxy"))
-        self.mode_label.setText(tx("mode", "Mode"))
         self.prompt_label.setText(tx("prompt", "Prompt"))
         self.reload_prompts_btn.setText(tx("reload_prompts", "Reload Prompts"))
         self.start_session_btn.setText(tx("start_session", "Start Session…"))
