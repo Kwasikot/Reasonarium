@@ -206,3 +206,27 @@ class Settings:
                     if val:
                         out.append(val)
         return out
+
+    # Whisper models
+    def whisper_models(self) -> List[str]:
+        root = self._root
+        out: List[str] = []
+        if root is None:
+            return out
+        node = root.find("whisper_models")
+        if node is None:
+            return out
+        for it in node.findall("model"):
+            val = (it.text or "").strip()
+            if val:
+                out.append(val)
+        return out
+
+    def default_whisper_model(self) -> Optional[str]:
+        root = self._root
+        if root is None:
+            return None
+        node = root.find("whisper_models")
+        if node is None:
+            return None
+        return node.get("default")

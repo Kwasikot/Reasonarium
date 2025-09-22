@@ -29,6 +29,7 @@
       <text key="record">Record</text>
       <text key="stop">Stop</text>
       <text key="microphone">Microphone</text>
+      <text key="whisper_model">Whisper model</text>
       <text key="cd_generate">Generate</text>
       <text key="cd_audience">Audience</text>
       <text key="cd_rarity">Rarity</text>
@@ -73,6 +74,7 @@
       <text key="record">Запись</text>
       <text key="stop">Стоп</text>
       <text key="microphone">Микрофон</text>
+      <text key="whisper_model">Модель Whisper</text>
       <text key="cd_generate">Сгенерировать</text>
       <text key="cd_audience">Аудитория</text>
       <text key="cd_rarity">Редкость</text>
@@ -145,6 +147,14 @@
       <item>История</item>
     </lang>
   </disciplines>
+
+  <whisper_models default="base">
+    <model>tiny</model>
+    <model>base</model>
+    <model>small</model>
+    <model>medium</model>
+    <model>large-v2</model>
+  </whisper_models>
   <!-- Ollama models fetched via HTTP (runtime). 
          Your app can GET http://localhost:11434/api/tags and populate this list. -->
     <ollama endpoint="http://localhost:11434" refresh_on_start="true">
