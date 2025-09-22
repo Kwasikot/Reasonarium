@@ -309,8 +309,11 @@ class ChatWindow(QMainWindow):
         self.messages = []
         if sys_prompt_applied.strip():
             self.messages.append({"role": "system", "content": sys_prompt_applied})
-        # Seed user message to trigger the assistant per instructions
-        seed_user = ("Начнём. Тема: " + topic.strip()) if topic.strip() else "Начнём."
+        # Seed user message to trigger the assistant per instructions (localized)
+        if (self.lang or '').lower() == 'ru':
+            seed_user = f"Начнём. Тема: {topic.strip()}" if topic.strip() else "Начнём."
+        else:
+            seed_user = f"Begin. Topic: {topic.strip()}" if topic.strip() else "Begin."
         self.messages.append({"role": "user", "content": seed_user})
         self._append_user(seed_user)
 
