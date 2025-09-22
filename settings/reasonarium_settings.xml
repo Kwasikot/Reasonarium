@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <settings>
-  <languages default="ru">
+  <languages default="en">
     <lang code="en" name="English"/>
     <lang code="ru" name="Русский"/>
   </languages>
