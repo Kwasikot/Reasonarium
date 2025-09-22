@@ -67,6 +67,10 @@ class ChatWindow(QMainWindow):
         self._stream_worker: Optional[StreamWorker] = None
         self.settings = Settings()
         self.lang = self.settings.default_language() if self.settings.ok() else "en"
+        # Voice/TTS state
+        self.media_player = None
+        self.audio_output = None
+        self._last_tts_path = None
 
         # UI
         self._build_ui()
