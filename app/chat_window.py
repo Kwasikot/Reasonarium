@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 import traceback
 from typing import List, Dict, Optional, Callable, Iterator
+import re
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
 from PyQt6.QtGui import QTextCursor
@@ -34,6 +35,19 @@ class StreamWorker(QObject):
             self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
+
+
+class ChatInput(QPlainTextEdit):
+    sendRequested = pyqtSignal()
+
+    def keyPressEvent(self, event):  # type: ignore
+        try:
+            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                self.sendRequested.emit()
+                return
+        except Exception:
+            pass
+        super().keyPressEvent(event)
 
 
 class ChatWindow(QMainWindow):
@@ -155,10 +169,11 @@ class ChatWindow(QMainWindow):
 
         # Input area
         input_row = QHBoxLayout()
-        self.input_edit = QPlainTextEdit()
+        self.input_edit = ChatInput()
         self.input_edit.setPlaceholderText("Type your message…")
         self.send_btn = QPushButton("Send")
         self.send_btn.clicked.connect(self.on_send)
+        self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
         input_row.addWidget(self.input_edit, stretch=1)
@@ -394,23 +409,53 @@ class ChatWindow(QMainWindow):
         self.chat_view.moveCursor(QTextCursor.MoveOperation.End)
 
     def _append_assistant(self, text: str):
-        self.chat_view.append("<b>Assistant:</b> <span id='assistant-current'></span>")
-        self._assistant_buffer = []  # internal buffer for streaming
+        # Start a new assistant message region we can update
+        self.chat_view.append("<b>Assistant:</b>")
+        cursor = self.chat_view.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self._assistant_anchor_pos = cursor.position()
+        self._assistant_buffer = []
         self._flush_assistant(text)
 
     def _flush_assistant(self, more_text: str):
         if more_text:
             self._assistant_buffer.append(more_text)
-        html = self._escape("".join(self._assistant_buffer)).replace("\n", "<br>")
-        # Replace last block's span content
+        buf_text = "".join(self._assistant_buffer)
+        rendered = self._render_assistant_html(buf_text)
         cursor = self.chat_view.textCursor()
-        cursor.movePosition(QTextCursor.MoveOperation.End)
-        self.chat_view.insertPlainText("")  # ensure layout updated
-        # The simple way: append incremental text directly
-        # For simplicity, append tokens as they arrive:
-        if more_text:
+        # Replace from anchor to end with formatted HTML
+        try:
+            cursor.setPosition(getattr(self, "_assistant_anchor_pos", cursor.position()))
+            cursor.movePosition(QTextCursor.MoveOperation.End, QTextCursor.MoveMode.KeepAnchor)
+            cursor.removeSelectedText()
+            cursor.insertHtml(rendered)
+            self.chat_view.moveCursor(QTextCursor.MoveOperation.End)
+        except Exception:
+            # Fallback: append as plain
             self.chat_view.insertPlainText(more_text)
             self.chat_view.moveCursor(QTextCursor.MoveOperation.End)
+
+    def _render_assistant_html(self, text: str) -> str:
+        """Render assistant buffer with colored A:/B: lines."""
+        lines = text.splitlines()
+        out: List[str] = []
+        re_a = re.compile(r"^\s*A\s*[:\.-]\s*(.*)$", re.IGNORECASE)
+        re_b = re.compile(r"^\s*B\s*[:\.-]\s*(.*)$", re.IGNORECASE)
+        for ln in lines:
+            m = re_a.match(ln)
+            if m:
+                body = self._escape(m.group(1))
+                out.append(f"<div style='color:#d32f2f'><b>A:</b> {body}</div>")
+                continue
+            m = re_b.match(ln)
+            if m:
+                body = self._escape(m.group(1))
+                out.append(f"<div style='color:#2e7d32'><b>B:</b> {body}</div>")
+                continue
+            out.append(f"<div>{self._escape(ln)}</div>")
+        if not lines:
+            return ""
+        return "".join(out)
 
     @staticmethod
     def _escape(text: str) -> str:
