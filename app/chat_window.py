@@ -11,12 +11,12 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
     QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox
 )
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaDevices, QAudioSource, QAudioFormat
 from PyQt6.QtCore import QUrl
 
 from app.prompts_loader import read_prompt
 from app.settings_loader import Settings
 from llm.openai_client import LLMClient as OpenAIClient
+from app.audio_recorder import AudioRecorder
 from llm.ollama_client import OllamaClient
 
 
@@ -67,15 +67,9 @@ class ChatWindow(QMainWindow):
         self._stream_worker: Optional[StreamWorker] = None
         self.settings = Settings()
         self.lang = self.settings.default_language() if self.settings.ok() else "en"
-        # Voice/TTS and recording state
-        self.media_player = None
-        self.audio_output = None
-        self._last_tts_path = None
+        # Topic and recording state (no QtMultimedia; we use sounddevice)
         self._last_topic = None
-        self.audio_source = None
-        self.audio_io = None
-        self.audio_wave = None
-        self._record_tmp_path = None
+        self._recorder: Optional[AudioRecorder] = None
         self._last_topic: Optional[str] = None
         self.audio_source: Optional[QAudioSource] = None
         self.audio_io = None
@@ -210,7 +204,7 @@ class ChatWindow(QMainWindow):
         input_row.addWidget(self.new_btn)
         input_row.addWidget(self.stt_btn)
         chat_layout.addLayout(input_row)
-        # Microphone row: selector + Record toggle
+        # Microphone row: selector + Record toggle (sounddevice backend)
         mic_row = QHBoxLayout()
         self.mic_label = QLabel("Microphone")
         self.mic_combo = QComboBox()
@@ -655,30 +649,15 @@ class ChatWindow(QMainWindow):
 
     # --- Microphone recording ---
     def on_record_toggle(self):
-        # Toggle recording; when stopping, run STT and paste text
-        if self.audio_source is not None:
+        # Toggle recording with sounddevice; on stop — transcribe
+        if self._recorder is not None:
             # Stop
             try:
-                if self.audio_io is not None:
-                    try:
-                        self.audio_io.readyRead.disconnect(self._on_audio_ready_read)
-                    except Exception:
-                        pass
-                self.audio_source.stop()
+                path = self._recorder.stop()
             except Exception:
-                pass
-            try:
-                if self.audio_wave is not None:
-                    self.audio_wave.close()
-            except Exception:
-                pass
-            self.audio_source = None
-            self.audio_io = None
-            # Update button
+                path = None
+            self._recorder = None
             self.record_btn.setText(self._t("record", "Record"))
-            # Transcribe
-            path = self._record_tmp_path
-            self._record_tmp_path = None
             if path and os.path.exists(path):
                 try:
                     if self.openai_client is None:
@@ -697,173 +676,21 @@ class ChatWindow(QMainWindow):
                         pass
             return
 
-        # Start recording
-        dev = self.mic_combo.currentData()
-        if dev is None:
+        dev_index = self.mic_combo.currentData()
+        if dev_index is None:
             QMessageBox.warning(self, "Audio", "No input device available.")
             return
-        fmt = QAudioFormat()
         try:
-            fmt.setSampleRate(16000)
-            fmt.setChannelCount(1)
-            fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
-        except Exception:
-            pass
-        try:
-            if hasattr(dev, 'isFormatSupported') and not dev.isFormatSupported(fmt):
-                fmt = dev.preferredFormat()
-        except Exception:
-            pass
-        try:
-            self.audio_source = QAudioSource(dev, fmt)
+            self._recorder = AudioRecorder(device=int(dev_index), samplerate=16000, channels=1)
+            self._recorder.start()
+            self.record_btn.setText(self._t("stop", "Stop"))
         except Exception as e:
+            self._recorder = None
             QMessageBox.critical(self, "Audio", f"Cannot start recording: {e}")
-            self.audio_source = None
-            return
-        # Prepare WAV file
-        import tempfile, wave
-        fd, tmp_path = tempfile.mkstemp(suffix='.wav')
-        os.close(fd)
-        try:
-            self.audio_wave = wave.open(tmp_path, 'wb')
-            ch = 1
-            sr = 16000
-            try:
-                ch = int(fmt.channelCount())
-                sr = int(fmt.sampleRate())
-            except Exception:
-                pass
-            # Sample width heuristic
-            sw = 2
-            try:
-                sf = fmt.sampleFormat()
-                if sf == QAudioFormat.SampleFormat.UInt8:
-                    sw = 1
-                elif sf in (QAudioFormat.SampleFormat.Int16,):
-                    sw = 2
-                elif sf in (QAudioFormat.SampleFormat.Int24,):
-                    sw = 3
-                elif sf in (QAudioFormat.SampleFormat.Int32, QAudioFormat.SampleFormat.Float):
-                    sw = 4
-            except Exception:
-                pass
-            self.audio_wave.setnchannels(ch)
-            self.audio_wave.setsampwidth(sw)
-            self.audio_wave.setframerate(sr)
-        except Exception as e:
-            QMessageBox.critical(self, "Audio", f"Cannot create WAV: {e}")
-            try:
-                os.unlink(tmp_path)
-            except Exception:
-                pass
-            return
-        self._record_tmp_path = tmp_path
-        # Start I/O streaming
-        try:
-            self.audio_io = self.audio_source.start()
-            self.audio_io.readyRead.connect(self._on_audio_ready_read)
-        except Exception as e:
-            QMessageBox.critical(self, "Audio", f"Capture failed: {e}")
-            try:
-                self.audio_wave.close()
-                os.unlink(tmp_path)
-            except Exception:
-                pass
-            self.audio_source = None
-            self.audio_io = None
-            self._record_tmp_path = None
-            return
-        self.record_btn.setText(self._t("stop", "Stop"))
 
-    def _on_audio_ready_read(self):
-        try:
-            if self.audio_io is None or self.audio_wave is None:
-                return
-            data = self.audio_io.readAll()
-            if not data:
-                return
-            b = bytes(data)
-            if b:
-                self.audio_wave.writeframes(b)
-        except Exception:
-            pass
+    # No QtMultimedia streaming callback; handled by AudioRecorder
 
-    # --- Voice mode (legacy buttons removed) ---
-    def on_voice_speak(self):
-        # Lazy init media objects (playback)
-        if self.media_player is None:
-            self.media_player = QMediaPlayer(self)
-            self.audio_output = QAudioOutput(self)
-            self.media_player.setAudioOutput(self.audio_output)
-        if self.engine_combo.currentText() != "OpenAI":
-            QMessageBox.information(self, "Voice", "Voice mode uses OpenAI for now.")
-            return
-        if self.openai_client is None:
-            try:
-                self.openai_client = OpenAIClient()
-            except Exception as e:
-                QMessageBox.critical(self, "Voice", f"OpenAI init failed: {e}")
-                return
-        # Pick an audio file to transcribe
-        path, _ = QFileDialog.getOpenFileName(self, self._t("speak", "Speak…"), "", "Audio Files (*.wav *.mp3 *.m4a *.ogg)")
-        if not path:
-            return
-        try:
-            text = self.openai_client.transcribe_file(path)
-        except Exception as e:
-            QMessageBox.critical(self, "Transcribe", f"Failed: {e}")
-            return
-        if not text:
-            QMessageBox.information(self, "Transcribe", "No speech recognized.")
-            return
-        self.input_edit.setPlainText(text)
-        if self.voice_check.isChecked():
-            self.on_send()
-
-    def on_voice_read(self):
-        if self.media_player is None:
-            self.media_player = QMediaPlayer(self)
-            self.audio_output = QAudioOutput(self)
-            self.media_player.setAudioOutput(self.audio_output)
-        if self.engine_combo.currentText() != "OpenAI":
-            QMessageBox.information(self, "Voice", "Voice mode uses OpenAI for now.")
-            return
-        if self.openai_client is None:
-            try:
-                self.openai_client = OpenAIClient()
-            except Exception as e:
-                QMessageBox.critical(self, "Voice", f"OpenAI init failed: {e}")
-                return
-        last_assistant = None
-        for m in reversed(self.messages):
-            if m.get("role") == "assistant" and m.get("content"):
-                last_assistant = m["content"]
-                break
-        if not last_assistant:
-            QMessageBox.information(self, "Voice", "No assistant message to read.")
-            return
-        import tempfile, os
-        fd, tmp_path = tempfile.mkstemp(suffix=".mp3")
-        os.close(fd)
-        try:
-            self.openai_client.tts_synthesize(last_assistant, tmp_path)
-        except Exception as e:
-            QMessageBox.critical(self, "TTS", f"Failed: {e}")
-            try:
-                os.unlink(tmp_path)
-            except Exception:
-                pass
-            return
-        try:
-            self.media_player.setSource(QUrl.fromLocalFile(tmp_path))
-            self.media_player.play()
-            self._last_tts_path = tmp_path
-        except Exception as e:
-            QMessageBox.critical(self, "Audio", f"Playback failed: {e}")
-            try:
-                os.unlink(tmp_path)
-            except Exception:
-                pass
+    # Voice playback and legacy functions removed (no QtMultimedia)
 
     # --- Language support ---
     def _apply_language(self):
