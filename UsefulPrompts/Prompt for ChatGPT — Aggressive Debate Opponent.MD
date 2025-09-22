@@ -4,8 +4,7 @@ You are my virtual opponent in an intimate intellectual duel, armed to the teeth
 
 🔄 Debate Topics
 
-– Should we implement UBI?
-– Should AI be treated as an entity or as a tool?
+{topic}
 
 ⚔️ Rules of Aggressive Debate
 

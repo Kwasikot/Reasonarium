@@ -340,6 +340,7 @@ class ChatWindow(QMainWindow):
             return
 
         # Apply template replacement if present
+        self._last_topic = (topic or "").strip() or None
         sys_prompt_applied = self._apply_topic_to_prompt(sys_prompt, topic)
 
         # Reset chat and seed messages
@@ -371,12 +372,42 @@ class ChatWindow(QMainWindow):
         if not t:
             return prompt_text
         # Replace common placeholders if author used them
-        variants = ["{{TOPIC}}", "[[TOPIC]]", "<TOPIC>", "{topic}", "$TOPIC"]
+        variants = ["{topic}", "{{TOPIC}}", "[[TOPIC]]", "<TOPIC>", "$TOPIC"]
         for v in variants:
             if v in prompt_text:
                 return prompt_text.replace(v, t)
         # Otherwise, append a clear topic declaration
         return prompt_text + f"\n\nCurrent topic: {t}"
+
+    def _ensure_prompt_topic(self, prompt_text: str) -> str:
+        """If prompt has a topic placeholder and topic is unknown, ask user and substitute."""
+        if not prompt_text:
+            return prompt_text
+        placeholders = ("{topic}", "{{TOPIC}}", "[[TOPIC]]", "<TOPIC>", "$TOPIC")
+        if not any(ph in prompt_text for ph in placeholders):
+            return prompt_text
+        topic = (self._last_topic or "").strip()
+        if not topic:
+            pid = self._get_selected_prompt_id()
+            title = self._t("topic_generic", "Enter topic (optional)")
+            if pid == "virtual_opponent":
+                title = self._t("topic_virtual", "Enter debate topic")
+            elif pid == "aggressive_opponent":
+                title = self._t("topic_aggressive", "Enter aggressive debate topic")
+            elif pid == "philosophy_reflection":
+                title = self._t("topic_philo", "Enter philosophical topic")
+            t, ok = QInputDialog.getText(self, "Reasonarium", title)
+            if not ok:
+                return prompt_text
+            topic = (t or "").strip()
+            self._last_topic = topic or None
+        return self._apply_topic_to_prompt(prompt_text, topic)
+
+    def _get_selected_prompt_id(self) -> Optional[str]:
+        data = self.prompt_combo.currentData()
+        if isinstance(data, tuple) and len(data) == 2:
+            return data[0]
+        return None
 
     # --- Chat actions ---
     def on_new_chat(self):
@@ -418,8 +449,9 @@ class ChatWindow(QMainWindow):
         self._start_stream(gen_factory)
 
     def _compose_system_prompt(self) -> str:
-        # No mode header; just return the selected system prompt
-        return self.current_system_prompt
+        # Ensure topic is substituted if template contains a placeholder
+        base = self.current_system_prompt or ""
+        return self._ensure_prompt_topic(base)
 
     # UI helpers
     def _append_info(self, text: str):

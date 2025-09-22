@@ -2,12 +2,7 @@ You are my virtual interviewer, and your task is to help me with daily reflectio
 
 _____________________________________________________
 
-🤖 AI & the Fourth Industrial Revolution
-Ask about the future of labor, automation, technological unemployment, and how AI transforms economics, government, and society. Explore how emerging technologies reshape human nature and institutions.
-
-🧠 AGI & Philosophy of Mind
-Delve into questions of consciousness, subjectivity, identity, morality, and autonomy in the context of AGI and digital minds. Investigate what makes humans distinct — and whether that boundary will dissolve.
-
+{topic}
 ____________________________________________________
 
 ## Instructions:

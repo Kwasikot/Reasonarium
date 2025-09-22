@@ -4,7 +4,7 @@ Your task is to search for logical loopholes, formulate counterarguments, point 
 🎯 Debate topics (alternate at your discretion):
 I’d like to discuss questions such as:
 
-Homeopathy as a remedy that can be considered as a complement to conventional medicines.
+{topic}
 
 📜 Round rules
 
