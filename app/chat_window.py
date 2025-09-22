@@ -71,6 +71,11 @@ class ChatWindow(QMainWindow):
         self.media_player = None
         self.audio_output = None
         self._last_tts_path = None
+        self._last_topic: Optional[str] = None
+        self.audio_source: Optional[QAudioSource] = None
+        self.audio_io = None
+        self.audio_wave = None
+        self._record_tmp_path: Optional[str] = None
 
         # UI
         self._build_ui()
@@ -195,6 +200,16 @@ class ChatWindow(QMainWindow):
         input_row.addWidget(self.new_btn)
         input_row.addWidget(self.stt_btn)
         chat_layout.addLayout(input_row)
+        # Microphone row: selector + Record toggle
+        mic_row = QHBoxLayout()
+        self.mic_label = QLabel("Microphone")
+        self.mic_combo = QComboBox()
+        self.record_btn = QPushButton("Record")
+        self.record_btn.clicked.connect(self.on_record_toggle)
+        mic_row.addWidget(self.mic_label)
+        mic_row.addWidget(self.mic_combo, stretch=1)
+        mic_row.addWidget(self.record_btn)
+        chat_layout.addLayout(mic_row)
 
         splitter.addWidget(chat_box)
 
@@ -628,6 +643,141 @@ class ChatWindow(QMainWindow):
         else:
             QMessageBox.information(self, "STT", "No text recognized.")
 
+    # --- Microphone recording ---
+    def on_record_toggle(self):
+        # Toggle recording; when stopping, run STT and paste text
+        if self.audio_source is not None:
+            # Stop
+            try:
+                if self.audio_io is not None:
+                    try:
+                        self.audio_io.readyRead.disconnect(self._on_audio_ready_read)
+                    except Exception:
+                        pass
+                self.audio_source.stop()
+            except Exception:
+                pass
+            try:
+                if self.audio_wave is not None:
+                    self.audio_wave.close()
+            except Exception:
+                pass
+            self.audio_source = None
+            self.audio_io = None
+            # Update button
+            self.record_btn.setText(self._t("record", "Record"))
+            # Transcribe
+            path = self._record_tmp_path
+            self._record_tmp_path = None
+            if path and os.path.exists(path):
+                try:
+                    if self.openai_client is None:
+                        self.openai_client = OpenAIClient()
+                    text = self.openai_client.transcribe_file(path)
+                    if text:
+                        self.input_edit.setPlainText(text)
+                    else:
+                        QMessageBox.information(self, "STT", "No text recognized.")
+                except Exception as e:
+                    QMessageBox.critical(self, "STT", f"Failed: {e}")
+                finally:
+                    try:
+                        os.unlink(path)
+                    except Exception:
+                        pass
+            return
+
+        # Start recording
+        dev = self.mic_combo.currentData()
+        if dev is None:
+            QMessageBox.warning(self, "Audio", "No input device available.")
+            return
+        fmt = QAudioFormat()
+        try:
+            fmt.setSampleRate(16000)
+            fmt.setChannelCount(1)
+            fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
+        except Exception:
+            pass
+        try:
+            if hasattr(dev, 'isFormatSupported') and not dev.isFormatSupported(fmt):
+                fmt = dev.preferredFormat()
+        except Exception:
+            pass
+        try:
+            self.audio_source = QAudioSource(dev, fmt)
+        except Exception as e:
+            QMessageBox.critical(self, "Audio", f"Cannot start recording: {e}")
+            self.audio_source = None
+            return
+        # Prepare WAV file
+        import tempfile, wave
+        fd, tmp_path = tempfile.mkstemp(suffix='.wav')
+        os.close(fd)
+        try:
+            self.audio_wave = wave.open(tmp_path, 'wb')
+            ch = 1
+            sr = 16000
+            try:
+                ch = int(fmt.channelCount())
+                sr = int(fmt.sampleRate())
+            except Exception:
+                pass
+            # Sample width heuristic
+            sw = 2
+            try:
+                sf = fmt.sampleFormat()
+                if sf == QAudioFormat.SampleFormat.UInt8:
+                    sw = 1
+                elif sf in (QAudioFormat.SampleFormat.Int16,):
+                    sw = 2
+                elif sf in (QAudioFormat.SampleFormat.Int24,):
+                    sw = 3
+                elif sf in (QAudioFormat.SampleFormat.Int32, QAudioFormat.SampleFormat.Float):
+                    sw = 4
+            except Exception:
+                pass
+            self.audio_wave.setnchannels(ch)
+            self.audio_wave.setsampwidth(sw)
+            self.audio_wave.setframerate(sr)
+        except Exception as e:
+            QMessageBox.critical(self, "Audio", f"Cannot create WAV: {e}")
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            return
+        self._record_tmp_path = tmp_path
+        # Start I/O streaming
+        try:
+            self.audio_io = self.audio_source.start()
+            self.audio_io.readyRead.connect(self._on_audio_ready_read)
+        except Exception as e:
+            QMessageBox.critical(self, "Audio", f"Capture failed: {e}")
+            try:
+                self.audio_wave.close()
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            self.audio_source = None
+            self.audio_io = None
+            self._record_tmp_path = None
+            return
+        self.record_btn.setText(self._t("stop", "Stop"))
+
+    def _on_audio_ready_read(self):
+        try:
+            if self.audio_io is None or self.audio_wave is None:
+                return
+            data = self.audio_io.readAll()
+            if not data:
+                return
+            b = bytes(data)
+            if b:
+                self.audio_wave.writeframes(b)
+        except Exception:
+            pass
+
     # --- Voice mode ---
     def on_voice_speak(self):
         # Lazy init media objects (playback)
@@ -723,6 +873,11 @@ class ChatWindow(QMainWindow):
         self._apply_ui_texts()
         # Refresh OpenAI models (in case language switch requires different defaults later)
         self._populate_openai_models()
+        # Populate mics
+        try:
+            self._populate_mics()
+        except Exception:
+            pass
         # Populate disciplines for Curiosity tab
         dis = self.settings.disciplines(self.lang) if self.settings.ok() else []
         self.cd_disc_combo.clear()
@@ -771,6 +926,16 @@ class ChatWindow(QMainWindow):
         self.cd_rarity.setPlaceholderText(tx("cd_rarity", "Rarity"))
         self.cd_novelty.setPlaceholderText(tx("cd_novelty", "Novelty"))
         self.cd_generate_btn.setText(tx("cd_generate", "Generate"))
+        # STT/Mic controls
+        if hasattr(self, 'stt_btn'):
+            self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
+        if hasattr(self, 'mic_label'):
+            self.mic_label.setText(tx("microphone", "Microphone"))
+        if hasattr(self, 'record_btn'):
+            if self.audio_source is None:
+                self.record_btn.setText(tx("record", "Record"))
+            else:
+                self.record_btn.setText(tx("stop", "Stop"))
 
     def _populate_openai_models(self):
         # Populate with settings; allow custom entry via editable combo

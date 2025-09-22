@@ -26,6 +26,9 @@
       <text key="speak">Speak…</text>
       <text key="read_aloud">Read aloud</text>
       <text key="speech_to_text">Speech to text</text>
+      <text key="record">Record</text>
+      <text key="stop">Stop</text>
+      <text key="microphone">Microphone</text>
       <text key="cd_generate">Generate</text>
       <text key="cd_audience">Audience</text>
       <text key="cd_rarity">Rarity</text>
@@ -67,6 +70,9 @@
       <text key="speak">Говорить…</text>
       <text key="read_aloud">Озвучить</text>
       <text key="speech_to_text">Речь в текст</text>
+      <text key="record">Запись</text>
+      <text key="stop">Стоп</text>
+      <text key="microphone">Микрофон</text>
       <text key="cd_generate">Сгенерировать</text>
       <text key="cd_audience">Аудитория</text>
       <text key="cd_rarity">Редкость</text>
