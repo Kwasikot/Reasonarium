@@ -5,6 +5,7 @@ import wave
 import tempfile
 import os
 from typing import Optional
+import logging
 
 import numpy as np
 
@@ -12,6 +13,9 @@ try:
     import sounddevice as sd
 except Exception as e:
     sd = None  # type: ignore
+
+
+log = logging.getLogger("reasonarium.audio")
 
 
 class AudioRecorder:
@@ -37,15 +41,25 @@ class AudioRecorder:
     @staticmethod
     def list_input_devices() -> list[dict]:
         if sd is None:
+            log.error("sounddevice not available; cannot enumerate microphones")
             return []
-        devs = sd.query_devices()
+        try:
+            devs = sd.query_devices()
+        except Exception as e:
+            log.error(f"Mic enumeration failed: {e}")
+            return []
         out = []
         for idx, d in enumerate(devs):
             try:
                 if int(d.get('max_input_channels', 0)) > 0:
                     out.append({"index": idx, "name": d.get('name', f'Device {idx}'), "hostapi": d.get('hostapi')})
-            except Exception:
+            except Exception as e:
+                log.debug(f"Skip device {idx}: {e}")
                 continue
+        if not out:
+            log.warning("No input devices reported by sounddevice. Check OS microphone permissions/drivers.")
+        else:
+            log.info(f"Found {len(out)} input device(s)")
         return out
 
     def _callback(self, indata, frames, time, status):  # type: ignore
@@ -127,4 +141,3 @@ class AudioRecorder:
         out = self._path
         self._path = None
         return out
-

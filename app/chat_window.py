@@ -647,6 +647,35 @@ class ChatWindow(QMainWindow):
         else:
             QMessageBox.information(self, "STT", "No text recognized.")
 
+    def _populate_mics(self):
+        # Enumerate microphones using sounddevice helper
+        try:
+            from app.audio_recorder import AudioRecorder
+            inputs = AudioRecorder.list_input_devices()
+        except Exception as e:
+            print(f"[Audio] Microphone enumeration failed: {e}")
+            traceback.print_exc()
+            inputs = []
+        try:
+            self.mic_combo.blockSignals(True)
+            self.mic_combo.clear()
+            if inputs:
+                for dev in inputs:
+                    name = dev.get('name') or f"Device {dev.get('index')}"
+                    self.mic_combo.addItem(name, userData=dev.get('index'))
+                self.mic_combo.setCurrentIndex(0)
+                self.record_btn.setEnabled(True)
+                print(f"[Audio] {len(inputs)} microphone(s) available")
+            else:
+                self.mic_combo.addItem("(no inputs)", userData=None)
+                self.record_btn.setEnabled(False)
+                print("[Audio] No microphones found; check OS permissions and drivers")
+        finally:
+            try:
+                self.mic_combo.blockSignals(False)
+            except Exception:
+                pass
+
     # --- Microphone recording ---
     def on_record_toggle(self):
         # Toggle recording with sounddevice; on stop — transcribe
