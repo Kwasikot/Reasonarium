@@ -25,6 +25,7 @@
       <text key="voice_mode">Voice mode</text>
       <text key="speak">Speak…</text>
       <text key="read_aloud">Read aloud</text>
+      <text key="speech_to_text">Speech to text</text>
       <text key="cd_generate">Generate</text>
       <text key="cd_audience">Audience</text>
       <text key="cd_rarity">Rarity</text>
@@ -65,6 +66,7 @@
       <text key="voice_mode">Голосовой режим</text>
       <text key="speak">Говорить…</text>
       <text key="read_aloud">Озвучить</text>
+      <text key="speech_to_text">Речь в текст</text>
       <text key="cd_generate">Сгенерировать</text>
       <text key="cd_audience">Аудитория</text>
       <text key="cd_rarity">Редкость</text>

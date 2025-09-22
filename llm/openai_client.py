@@ -110,28 +110,24 @@ class LLMClient:
 
     # --- Audio APIs ---
     def transcribe_file(self, file_path: str, model: Optional[str] = None) -> str:
-        """Transcribe an audio file using OpenAI transcription model.
-        Prefers gpt-4o-mini-transcribe if available, falls back to whisper-1.
-        """
-        use_model = model or os.getenv("USEFULCLICKER_OPENAI_STT_MODEL", "gpt-4o-mini-transcribe")
-        try:
-            with open(file_path, 'rb') as f:
-                resp = self.client.audio.transcriptions.create(model=use_model, file=f)
-            # SDK typically returns an object with .text
-            text = getattr(resp, 'text', None)
-            if isinstance(text, str) and text.strip():
-                return text.strip()
-        except Exception:
-            # Fallback to whisper-1
+        """Transcribe an audio file. Tries gpt-4o-transcribe → gpt-4o-mini-transcribe → whisper-1."""
+        ordered = [
+            model or os.getenv("USEFULCLICKER_OPENAI_STT_MODEL") or "gpt-4o-transcribe",
+            "gpt-4o-mini-transcribe",
+            "whisper-1",
+        ]
+        last_err: Optional[Exception] = None
+        for m in ordered:
             try:
                 with open(file_path, 'rb') as f:
-                    resp = self.client.audio.transcriptions.create(model='whisper-1', file=f)
+                    resp = self.client.audio.transcriptions.create(model=m, file=f)
                 text = getattr(resp, 'text', None)
                 if isinstance(text, str) and text.strip():
                     return text.strip()
             except Exception as e:
-                raise RuntimeError(f"Transcription failed: {e}")
-        return ""
+                last_err = e
+                continue
+        raise RuntimeError(f"Transcription failed: {last_err}")
 
     def tts_synthesize(self, text: str, out_path: str, voice: Optional[str] = None, model: Optional[str] = None, format: str = 'mp3') -> str:
         """Synthesize speech to out_path. Returns the file path."""

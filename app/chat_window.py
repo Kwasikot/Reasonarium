@@ -187,9 +187,13 @@ class ChatWindow(QMainWindow):
         self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
+        # Speech-to-text button
+        self.stt_btn = QPushButton("Speech to text")
+        self.stt_btn.clicked.connect(self.on_speech_to_text)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
+        input_row.addWidget(self.stt_btn)
         chat_layout.addLayout(input_row)
 
         splitter.addWidget(chat_box)
@@ -602,6 +606,28 @@ class ChatWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "OpenAI", f"Connection error: {e}")
 
+    def on_speech_to_text(self):
+        # Initialize OpenAI client
+        if self.openai_client is None:
+            try:
+                self.openai_client = OpenAIClient()
+            except Exception as e:
+                QMessageBox.critical(self, "OpenAI", f"Init failed: {e}")
+                return
+        # Pick audio file
+        path, _ = QFileDialog.getOpenFileName(self, self._t("speech_to_text", "Speech to text"), "", "Audio Files (*.wav *.mp3 *.m4a *.ogg)")
+        if not path:
+            return
+        try:
+            text = self.openai_client.transcribe_file(path, model=None)
+        except Exception as e:
+            QMessageBox.critical(self, "STT", f"Failed: {e}")
+            return
+        if text:
+            self.input_edit.setPlainText(text)
+        else:
+            QMessageBox.information(self, "STT", "No text recognized.")
+
     # --- Voice mode ---
     def on_voice_speak(self):
         # Lazy init media objects (playback)
@@ -729,6 +755,7 @@ class ChatWindow(QMainWindow):
         self.new_btn.setText(tx("new_chat", "New Chat"))
         self.preview_box.setTitle(tx("prompt_preview", "Prompt Preview"))
         self.test_btn.setText(tx("test_openai", "Test OpenAI"))
+        self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
         # Tabs
         self.tabs.setTabText(0, tx("tab_chat", "Chat"))
         # Curiosity tab texts
