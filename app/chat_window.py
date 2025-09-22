@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
     QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox
 )
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaDevices, QAudioSource, QAudioFormat
 from PyQt6.QtCore import QUrl
 
 from app.prompts_loader import read_prompt
@@ -67,10 +67,15 @@ class ChatWindow(QMainWindow):
         self._stream_worker: Optional[StreamWorker] = None
         self.settings = Settings()
         self.lang = self.settings.default_language() if self.settings.ok() else "en"
-        # Voice/TTS state
+        # Voice/TTS and recording state
         self.media_player = None
         self.audio_output = None
         self._last_tts_path = None
+        self._last_topic = None
+        self.audio_source = None
+        self.audio_io = None
+        self.audio_wave = None
+        self._record_tmp_path = None
         self._last_topic: Optional[str] = None
         self.audio_source: Optional[QAudioSource] = None
         self.audio_io = None
@@ -81,6 +86,11 @@ class ChatWindow(QMainWindow):
         self._build_ui()
         self._apply_language()
         self._populate_openai_models()
+        # Populate microphones initially
+        try:
+            self._populate_mics()
+        except Exception:
+            pass
         self._load_prompts_from_settings()
 
     # --- UI Construction ---
@@ -778,7 +788,7 @@ class ChatWindow(QMainWindow):
         except Exception:
             pass
 
-    # --- Voice mode ---
+    # --- Voice mode (legacy buttons removed) ---
     def on_voice_speak(self):
         # Lazy init media objects (playback)
         if self.media_player is None:
@@ -926,6 +936,16 @@ class ChatWindow(QMainWindow):
         self.cd_rarity.setPlaceholderText(tx("cd_rarity", "Rarity"))
         self.cd_novelty.setPlaceholderText(tx("cd_novelty", "Novelty"))
         self.cd_generate_btn.setText(tx("cd_generate", "Generate"))
+        # STT/Mic controls
+        if hasattr(self, 'stt_btn'):
+            self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
+        if hasattr(self, 'mic_label'):
+            self.mic_label.setText(tx("microphone", "Microphone"))
+        if hasattr(self, 'record_btn'):
+            if self.audio_source is None:
+                self.record_btn.setText(tx("record", "Record"))
+            else:
+                self.record_btn.setText(tx("stop", "Stop"))
         # STT/Mic controls
         if hasattr(self, 'stt_btn'):
             self.stt_btn.setText(tx("speech_to_text", "Speech to text"))
