@@ -1542,15 +1542,7 @@ class ChatWindow(QMainWindow):
                 f"Theory:\n{theory}\n\nUser critique/experiments:\n{usercrit}"
             )
         try:
-            if eng == 'openai':
-                if self.openai_client is None:
-                    self.openai_client = OpenAIClient()
-                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
-            else:
-                if self.ollama_client is None:
-                    self.ollama_client = OllamaClient()
-                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+            gen_factory = self._make_prompt_stream_factory(prompt)
+            self._stream_text_to_edit(self.pop_result, gen_factory)
         except Exception as e:
             QMessageBox.critical(self, "Popper", f"Critique evaluation failed: {e}")
-            return
-        self.pop_result.setPlainText(text or "")
