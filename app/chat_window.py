@@ -761,7 +761,8 @@ class ChatWindow(QMainWindow):
             "2. Identify cons (weaknesses): hidden assumptions, logical flaws, vague or exaggerated claims, contradictions, engineering impossibilities, or unfalsifiable parts.\n"
             "3. Suggest ways the device could be tested, improved, or reformulated.\n"
             "4. Maintain a tough but professional tone: highlight the most serious flaws without softening the judgment.\n"
-            "5. Analyze device using first principles framework, try to understand is it even possible in our physical laws \n\n"
+            "5. Apply first-principles analysis to test whether the proposed mechanism can exist within the boundaries of current physical laws \n"
+            "Format:\n**Pros**: (bullet list)\n**Cons**: (bullet list)\n**Recommendations**: (short advice)\n\n"
             f"Technology description:\n{desc}"
         )
         gen = self._make_prompt_stream_factory(prompt)
