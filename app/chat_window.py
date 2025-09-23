@@ -315,14 +315,33 @@ class ChatWindow(QMainWindow):
         self.pop_theory.setReadOnly(True)
         pop_layout.addWidget(self.pop_theory, stretch=1)
 
-        self.pop_user_lbl = QLabel("Your falsification attempt")
+        self.pop_user_lbl = QLabel("Your experiments / observations")
         self.pop_user_edit = QPlainTextEdit()
         pop_layout.addWidget(self.pop_user_lbl)
         pop_layout.addWidget(self.pop_user_edit)
 
+        # Optional AI suggestions
+        from PyQt6.QtWidgets import QCheckBox
+        self.pop_ai_chk = QCheckBox("Show AI suggestions")
+        self.pop_ai_chk.stateChanged.connect(self.on_popper_ai_toggle)
+        pop_layout.addWidget(self.pop_ai_chk)
+        self.pop_ai_lbl = QLabel("AI experiments / observations")
+        self.pop_ai_edit = QPlainTextEdit()
+        self.pop_ai_edit.setReadOnly(True)
+        self.pop_ai_lbl.setVisible(False)
+        self.pop_ai_edit.setVisible(False)
+        pop_layout.addWidget(self.pop_ai_lbl)
+        pop_layout.addWidget(self.pop_ai_edit)
+
+        row_eval = QHBoxLayout()
         self.pop_check_btn = QPushButton("Evaluate falsification")
         self.pop_check_btn.clicked.connect(self.on_popper_check)
-        pop_layout.addWidget(self.pop_check_btn)
+        self.pop_confirm_btn = QPushButton("Confirm experiment")
+        self.pop_confirm_btn.clicked.connect(self.on_popper_confirm)
+        row_eval.addStretch(1)
+        row_eval.addWidget(self.pop_check_btn)
+        row_eval.addWidget(self.pop_confirm_btn)
+        pop_layout.addLayout(row_eval)
 
         self.pop_result_lbl = QLabel("Evaluation")
         self.pop_result = QPlainTextEdit()
@@ -743,25 +762,25 @@ class ChatWindow(QMainWindow):
             QMessageBox.information(self, "Popper", "Synthesize a theory first")
             return
         if not attempt:
-            QMessageBox.information(self, "Popper", "Write your falsification attempt")
+            QMessageBox.information(self, "Popper", "Provide your experiments / observations")
             return
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
         if (self.lang or '').lower() == 'ru':
             prompt = (
-                "Оцени попытку опровержения с позиций Поппера. Теория ниже, затем попытка. "
-                "Оцени по трём критериям (0–2 балла каждый): (1) сформулировано ли тестируемое предсказание; "
-                "(2) предложен ли эксперимент/наблюдение, которое могло бы опровергнуть теорию; "
-                "(3) указаны ли нефальсифицируемые элементы. Дай краткий разбор и итоговую сумму баллов.\n\n"
-                f"Теория:\n{theory}\n\nПопытка опровержения:\n{attempt}"
+                "Оцени предложенные эксперименты/наблюдения с позиций Поппера. Сначала теория, затем список экспериментов. "
+                "Оцени по трём критериям (0–2 балла каждый): (1) есть ли чёткие тестируемые предсказания, к которым привязаны эксперименты; "
+                "(2) действительно ли предложенные эксперименты/наблюдения могут сфальсифицировать предсказания; "
+                "(3) есть ли нефальсифицируемые элементы. Дай краткий разбор и итоговую сумму баллов.\n\n"
+                f"Теория:\n{theory}\n\nЭксперименты/наблюдения пользователя:\n{attempt}"
             )
         else:
             prompt = (
-                "Evaluate the falsification attempt in Popper's terms. The theory is below, then the attempt. "
-                "Score three criteria (0–2 each): (1) Is there a testable prediction? (2) Is there a proposed experiment/observation "
-                "that could falsify the theory? (3) Are unfalsifiable parts identified? Provide a brief critique and a total score.\n\n"
-                f"Theory:\n{theory}\n\nFalsification attempt:\n{attempt}"
+                "Evaluate the proposed experiments/observations in Popper's terms. The theory is below, then the list of experiments. "
+                "Score three criteria (0–2 each): (1) Are there clear testable predictions that the experiments target? (2) Can the proposed "
+                "experiments/observations actually falsify those predictions? (3) Are there unfalsifiable parts? Provide a brief critique and a total score.\n\n"
+                f"Theory:\n{theory}\n\nUser experiments/observations:\n{attempt}"
             )
         try:
             if eng == 'openai':
@@ -776,6 +795,81 @@ class ChatWindow(QMainWindow):
             QMessageBox.critical(self, "Popper", f"Evaluation failed: {e}")
             return
         self.pop_result.setPlainText(text or "")
+
+    def on_popper_confirm(self):
+        theory = (self.pop_theory.toPlainText() or "").strip()
+        experiments = (self.pop_user_edit.toPlainText() or "").strip()
+        if not theory or not experiments:
+            QMessageBox.information(self, "Popper", "Provide theory and experiments first")
+            return
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        if (self.lang or '').lower() == 'ru':
+            instr = "Дай максимально честную и конструктивную критику."
+            prompt = (
+                f"{instr} Оцени валидность предложенных экспериментов в рамках предсказаний данной теории. "
+                "Укажи сильные стороны, логические дыры, риски некорректной интерпретации, и как улучшить дизайн эксперимента.\n\n"
+                f"Теория:\n{theory}\n\nЭксперименты/наблюдения:\n{experiments}"
+            )
+        else:
+            instr = "Give me the most brutally honest constructive criticism you can."
+            prompt = (
+                f"{instr} Evaluate whether the proposed experiments are valid within the predictions of the theory. "
+                "Call out strengths, logical holes, risks of misinterpretation, and how to improve the experiment design.\n\n"
+                f"Theory:\n{theory}\n\nExperiments/observations:\n{experiments}"
+            )
+        try:
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+        except Exception as e:
+            QMessageBox.critical(self, "Popper", f"Critique failed: {e}")
+            return
+        self.pop_result.setPlainText(text or "")
+
+    def on_popper_ai_toggle(self, state: int):
+        show = state != 0
+        self.pop_ai_lbl.setVisible(show)
+        self.pop_ai_edit.setVisible(show)
+        if not show:
+            self.pop_ai_edit.clear()
+            return
+        # Generate AI suggestions for experiments
+        theory = (self.pop_theory.toPlainText() or "").strip()
+        if not theory:
+            return
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        if (self.lang or '').lower() == 'ru':
+            prompt = (
+                "Предложи 3–6 экспериментальных проверок или наблюдений, которые максимально прямо сфальсифицируют предсказания "
+                "данной теории. Кратко, по одному пункту в строке.\n\nТеория:\n" + theory
+            )
+        else:
+            prompt = (
+                "Propose 3–6 experimental tests or observations that could most directly falsify the predictions of this theory. "
+                "Keep it concise, one per line.\n\nTheory:\n" + theory
+            )
+        try:
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+        except Exception as e:
+            self.pop_ai_edit.setPlainText(f"Error: {e}")
+            return
+        self.pop_ai_edit.setPlainText(text or "")
 
     @staticmethod
     def _escape(text: str) -> str:
@@ -1086,8 +1180,11 @@ class ChatWindow(QMainWindow):
             # Populate options per language
             self._populate_popper_levels()
             self.pop_syn_btn.setText(tx("popper_synthesize", "Synthesize theory"))
-            self.pop_user_lbl.setText(tx("popper_user_attempt", "Your falsification attempt"))
+            self.pop_user_lbl.setText(tx("popper_user_experiments", "Your experiments / observations"))
+            self.pop_ai_chk.setText(tx("popper_ai_show", "Show AI suggestions"))
+            self.pop_ai_lbl.setText(tx("popper_ai_experiments", "AI experiments / observations"))
             self.pop_check_btn.setText(tx("popper_check", "Evaluate falsification"))
+            self.pop_confirm_btn.setText(tx("popper_confirm", "Confirm experiment"))
             self.pop_result_lbl.setText(tx("popper_result", "Evaluation"))
         except Exception:
             pass
