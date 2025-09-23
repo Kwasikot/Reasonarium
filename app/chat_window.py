@@ -279,6 +279,44 @@ class ChatWindow(QMainWindow):
 
         self.tabs.addTab(cd_tab, "Curiosity Drive")
 
+        # --- Popper Challenge tab ---
+        pop_tab = QWidget()
+        pop_layout = QVBoxLayout(pop_tab)
+        pop_controls = QHBoxLayout()
+        pop_layout.addLayout(pop_controls)
+        self.pop_lbl_d1 = QLabel("Discipline A")
+        self.pop_d1 = QComboBox()
+        self.pop_lbl_d2 = QLabel("Discipline B")
+        self.pop_d2 = QComboBox()
+        self.pop_syn_btn = QPushButton("Synthesize theory")
+        self.pop_syn_btn.clicked.connect(self.on_popper_synthesize)
+        pop_controls.addWidget(self.pop_lbl_d1)
+        pop_controls.addWidget(self.pop_d1)
+        pop_controls.addWidget(self.pop_lbl_d2)
+        pop_controls.addWidget(self.pop_d2)
+        pop_controls.addWidget(self.pop_syn_btn)
+
+        self.pop_theory = QPlainTextEdit()
+        self.pop_theory.setReadOnly(True)
+        pop_layout.addWidget(self.pop_theory, stretch=1)
+
+        self.pop_user_lbl = QLabel("Your falsification attempt")
+        self.pop_user_edit = QPlainTextEdit()
+        pop_layout.addWidget(self.pop_user_lbl)
+        pop_layout.addWidget(self.pop_user_edit)
+
+        self.pop_check_btn = QPushButton("Evaluate falsification")
+        self.pop_check_btn.clicked.connect(self.on_popper_check)
+        pop_layout.addWidget(self.pop_check_btn)
+
+        self.pop_result_lbl = QLabel("Evaluation")
+        self.pop_result = QPlainTextEdit()
+        self.pop_result.setReadOnly(True)
+        pop_layout.addWidget(self.pop_result_lbl)
+        pop_layout.addWidget(self.pop_result, stretch=1)
+
+        self.tabs.addTab(pop_tab, "Popper Challenge")
+
     def _load_prompts(self):
         # Fallback scanner if settings are not used
         from app.prompts_loader import list_prompt_files
@@ -627,6 +665,88 @@ class ChatWindow(QMainWindow):
             return ""
         return "".join(out)
 
+    # --- Popper Challenge actions ---
+    def on_popper_synthesize(self):
+        try:
+            d1 = (self.pop_d1.currentText() or "").strip()
+            d2 = (self.pop_d2.currentText() or "").strip()
+        except Exception:
+            d1 = d2 = ""
+        if not d1 and not d2:
+            QMessageBox.information(self, "Popper", "Select at least one discipline")
+            return
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        if (self.lang or '').lower() == 'ru':
+            prompt = (
+                "Синтезируй короткую (6–10 предложений) научно‑ориентированную теорию по дисциплинам "
+                f"{d1}{' и ' + d2 if d2 else ''}, объясняющую реальное явление. "
+                "Требования: 1) сформулируй минимум 2 чётких предсказания, 2) укажи потенциальные эксперименты/наблюдения, "
+                "которые могли бы опровергнуть теорию, 3) отметь, какие её части нефальсифицируемы и почему это проблема."
+            )
+        else:
+            prompt = (
+                "Synthesize a short (6–10 sentences) science‑oriented theory in "
+                f"{d1}{' and ' + d2 if d2 else ''} that explains a real‑world phenomenon. "
+                "Requirements: (1) list at least 2 clear testable predictions, (2) propose experiments/observations "
+                "that could falsify the theory, (3) highlight any unfalsifiable parts and why that is problematic."
+            )
+        try:
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+        except Exception as e:
+            QMessageBox.critical(self, "Popper", f"Synthesis failed: {e}")
+            return
+        self.pop_theory.setPlainText(text or "")
+
+    def on_popper_check(self):
+        theory = (self.pop_theory.toPlainText() or "").strip()
+        attempt = (self.pop_user_edit.toPlainText() or "").strip()
+        if not theory:
+            QMessageBox.information(self, "Popper", "Synthesize a theory first")
+            return
+        if not attempt:
+            QMessageBox.information(self, "Popper", "Write your falsification attempt")
+            return
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        if (self.lang or '').lower() == 'ru':
+            prompt = (
+                "Оцени попытку опровержения с позиций Поппера. Теория ниже, затем попытка. "
+                "Оцени по трём критериям (0–2 балла каждый): (1) сформулировано ли тестируемое предсказание; "
+                "(2) предложен ли эксперимент/наблюдение, которое могло бы опровергнуть теорию; "
+                "(3) указаны ли нефальсифицируемые элементы. Дай краткий разбор и итоговую сумму баллов.\n\n"
+                f"Теория:\n{theory}\n\nПопытка опровержения:\n{attempt}"
+            )
+        else:
+            prompt = (
+                "Evaluate the falsification attempt in Popper's terms. The theory is below, then the attempt. "
+                "Score three criteria (0–2 each): (1) Is there a testable prediction? (2) Is there a proposed experiment/observation "
+                "that could falsify the theory? (3) Are unfalsifiable parts identified? Provide a brief critique and a total score.\n\n"
+                f"Theory:\n{theory}\n\nFalsification attempt:\n{attempt}"
+            )
+        try:
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+        except Exception as e:
+            QMessageBox.critical(self, "Popper", f"Evaluation failed: {e}")
+            return
+        self.pop_result.setPlainText(text or "")
+
     @staticmethod
     def _escape(text: str) -> str:
         return (
@@ -922,6 +1042,31 @@ class ChatWindow(QMainWindow):
         # Curiosity tab texts
         # Find curiosity tab index (assumed 1)
         self.tabs.setTabText(1, tx("tab_curiosity", "Curiosity Drive"))
+        # Popper tab texts and data
+        if cdn is not None:
+            try:
+                dis = list(getattr(cdn, 'disciplines', []))
+            except Exception:
+                dis = []
+        else:
+            dis = []
+        try:
+            self.pop_d1.clear(); self.pop_d2.clear()
+            if dis:
+                self.pop_d1.addItems(dis)
+                self.pop_d2.addItems(dis)
+        except Exception:
+            pass
+        try:
+            self.tabs.setTabText(2, tx("tab_popper", "Popper Challenge"))
+            self.pop_lbl_d1.setText(tx("popper_d1", "Discipline A"))
+            self.pop_lbl_d2.setText(tx("popper_d2", "Discipline B"))
+            self.pop_syn_btn.setText(tx("popper_synthesize", "Synthesize theory"))
+            self.pop_user_lbl.setText(tx("popper_user_attempt", "Your falsification attempt"))
+            self.pop_check_btn.setText(tx("popper_check", "Evaluate falsification"))
+            self.pop_result_lbl.setText(tx("popper_result", "Evaluation"))
+        except Exception:
+            pass
         # Curiosity labels (form created with static labels; adjust)
         self.cd_lbl_disciplines.setText(tx("cd_disciplines", "Disciplines"))
         self.cd_lbl_audience.setText(tx("cd_audience", "Audience"))

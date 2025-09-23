@@ -23,6 +23,13 @@
       <text key="prompt_preview">Prompt Preview</text>
       <text key="tab_chat">Chat</text>
       <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="tab_popper">Popper Challenge</text>
+      <text key="popper_d1">Discipline A</text>
+      <text key="popper_d2">Discipline B</text>
+      <text key="popper_synthesize">Synthesize theory</text>
+      <text key="popper_user_attempt">Your falsification attempt</text>
+      <text key="popper_check">Evaluate falsification</text>
+      <text key="popper_result">Evaluation</text>
       <text key="voice_mode">Voice mode</text>
       <text key="speak">Speak…</text>
       <text key="read_aloud">Read aloud</text>
@@ -77,6 +84,13 @@
       <text key="prompt_preview">Предпросмотр промта</text>
       <text key="tab_chat">Чат</text>
       <text key="tab_curiosity">Curiosity Drive</text>
+      <text key="tab_popper">Вызов Поппера</text>
+      <text key="popper_d1">Дисциплина A</text>
+      <text key="popper_d2">Дисциплина B</text>
+      <text key="popper_synthesize">Синтезировать теорию</text>
+      <text key="popper_user_attempt">Ваше опровержение</text>
+      <text key="popper_check">Проверить опровержение</text>
+      <text key="popper_result">Оценка</text>
       <text key="voice_mode">Голосовой режим</text>
       <text key="speak">Говорить…</text>
       <text key="read_aloud">Озвучить</text>
