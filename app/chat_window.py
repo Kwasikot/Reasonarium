@@ -579,7 +579,7 @@ class ChatWindow(QMainWindow):
 
     def _append_assistant(self, text: str):
         # Start a new assistant message region we can update
-        self.chat_view.append("<b>Assistant:</b>")
+        self.chat_view.append("<b>Opponent:</b>")
         cursor = self.chat_view.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self._assistant_anchor_pos = cursor.position()
@@ -597,7 +597,8 @@ class ChatWindow(QMainWindow):
             cursor.setPosition(getattr(self, "_assistant_anchor_pos", cursor.position()))
             cursor.movePosition(QTextCursor.MoveOperation.End, QTextCursor.MoveMode.KeepAnchor)
             cursor.removeSelectedText()
-            cursor.insertHtml(rendered)
+            # Indent rendered block by ~2 spaces after the Opponent: line
+            cursor.insertHtml(f"<div style='margin-left: 1.5ch'>{rendered}</div>")
             self.chat_view.moveCursor(QTextCursor.MoveOperation.End)
         except Exception:
             # Fallback: append as plain
