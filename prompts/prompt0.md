@@ -287,3 +287,86 @@ Doctoral / PhD — очень высокая детализация, профе�
 --------------------------
 В функции on_popper_eval_selfcrit перепиши промты так чтобы они были не для двух языков, а для произвольного языка. 
 Просто ключи в сам промт язык как переменную, чтобы вывод был на языке интерфейса.
+---------------------------
+--------------------------
+Добавь новую вкладку сразу после Poppers Challenge.
+Она будет называться "Tech Skeptic Mode".
+У этого тренера цель — учить критиковать описания техники и идей, находить слабые места, ложные обещания, псевдонаучные элементы. То есть он развивает инженерный скептицизм и навык «видеть баги» в красивых описаниях технологий.
+Я хочу чтобы модель синтезировала короткое описание вымышленного устройства или технологии в разных областях (по спектру дисциплин MIT), и в тексте уже были встроены слабые места для критики. Пользователь затем тренируется находить ошибки, логические дыры, преувеличения, нефальсифицируемые утверждения.
+
+Интерфейс этой вкладки состоит из текстового поля для синтезированного описания, текстового поля для критики.
+Кнопки "Синтезировать описание технологии", "Analyze my criticism", "Жесткая ИИ критика технологии".
+
+
+
+Шаблон Synth Prompt (вызывается по кнопке "Синтезировать описание технологии"):
+"""
+Generate a short description (5–8 sentences) of a **fictional device or technology** 
+in a randomly chosen discipline ({discipline}). 
+
+The description must follow the chosen **Education Level**: 
+- School = simple and intuitive explanation 
+- Undergraduate = moderately technical 
+- Graduate = advanced and interdisciplinary 
+- PhD = highly technical, jargon-heavy, with references to theories. 
+
+Important: The description should intentionally include at least 2–3 weak spots 
+(logical flaws, vague claims, overgeneralizations, or unfalsifiable parts) so that 
+the user can practice criticizing it. 
+Make the flaws subtle at higher levels and obvious at lower levels. 
+
+Output format:
+1) Title of the device/technology
+2) Description (5–8 sentences, with hidden weaknesses)
+"""
+
+Шаблон Prompt 1 (вызывается по кнопке "Analyze my criticism"):
+"""
+You are evaluating a user's critique of a fictional device/technology description. 
+The critique should be judged on 5 criteria: 
+1) Did the user correctly identify weak points in the text? 
+2) Did they point to specific statements or assumptions? 
+3) Did they propose testable ways to falsify or check the claims? 
+4) Is their reasoning clear and logically structured? 
+5) Does the critique match the education level of the original text (School → PhD)? 
+
+Output format:
+- Score: give a score from 1 to 10.
+- Strengths: list 2–3 things the user did well.
+- Weaknesses: list 2–3 areas for improvement.
+- Suggestion: one short tip to improve the critique next time.
+
+User critique:
+{user_critique}
+"""
+
+Шаблон Prompt 2(вызывается по кнопке "Жесткая ИИ критика технологии")
+"""
+You are a critical technology evaluator . 
+Given a description of a fictional device or technology, produce a **rigorous, constructive, and uncompromising critique**.  
+
+Your goals:  
+1. Identify **pros (strengths)**: any plausible, well-explained, or innovative aspects.  
+2. Identify **cons (weaknesses)**: hidden assumptions, logical flaws, vague or exaggerated claims, contradictions, engineering impossibilities, or unfalsifiable parts.  
+3. Suggest **ways the device could be tested, improved, or reformulated**.  
+4. Maintain a tough but professional tone: highlight the most serious flaws without softening the judgment.  
+
+Format:  
+**Pros**: (bullet list, concise but insightful)  
+**Cons**: (bullet list, focused on weak points and potential failures)  
+**Recommendations**: (short, constructive advice for improvement)  
+
+Technology description:
+{tech_description}
+"""
+
+🔹 Уровни сложности (по образованию) (отдельный комбобокс наверху)
+1. School: простое объяснение, метафоры, базовые понятия.
+2. Undergraduate: чуть глубже, базовые термины из инженерии/наук.
+3. Graduate: технически сложнее, упоминания моделей и эффектов.
+4. PhD: насыщенный жаргоном, отсылки к теориям и методологиям, но намеренно с «слабыми местами».
+
+Список дисциплин возьми из tech_disciplines.md.
+
+Промты Synth Prompt, Prompt 1, Prompt 2 должны содержать переменную языка выбранного в интерфейсе программы.
+Строки элементов интерфейса вкладки "Tech Skeptic Mode" должны быть переведены и записаны в reasonarium_settings.xml

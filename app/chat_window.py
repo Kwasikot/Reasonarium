@@ -703,6 +703,70 @@ class ChatWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Next question", f"Failed: {e}")
 
+    # --- Tech Skeptic actions (streaming) ---
+    def _lang_name(self) -> str:
+        return {"ru": "Russian", "en": "English"}.get((self.lang or '').lower(), (self.lang or 'English'))
+
+    def on_tech_synth(self):
+        disc = (self.tech_disc_combo.currentText() or "").strip()
+        edu = (self.tech_edu_combo.currentText() or "").strip()
+        if not disc:
+            return
+        ln = self._lang_name()
+        prompt = (
+            f"Respond strictly in {ln}.\n\n"
+            "Generate a short description (5–8 sentences) of a fictional device or technology in a randomly chosen discipline "
+            f"({disc}).\n\n"
+            "The description must follow the chosen Education Level:\n"
+            "- School = simple and intuitive explanation\n"
+            "- Undergraduate = moderately technical\n"
+            "- Graduate = advanced and interdisciplinary\n"
+            "- PhD = highly technical, jargon-heavy, with references to theories.\n\n"
+            "Important: The description should intentionally include at least 2–3 weak spots (logical flaws, vague claims, overgeneralizations, or unfalsifiable parts) so that the user can practice criticizing it. Make the flaws subtle at higher levels and obvious at lower levels.\n\n"
+            "Output format:\n1) Title of the device/technology\n2) Description (5–8 sentences, with hidden weaknesses)\n\n"
+            f"Education Level: {edu}"
+        )
+        gen = self._make_prompt_stream_factory(prompt)
+        self._stream_text_to_edit(self.tech_desc, gen)
+
+    def on_tech_analyze(self):
+        crit = (self.tech_usercrit.toPlainText() or "").strip()
+        if not crit:
+            return
+        ln = self._lang_name()
+        prompt = (
+            f"Respond strictly in {ln}.\n\n"
+            "You are evaluating a user's critique of a fictional device/technology description. The critique should be judged on 5 criteria:\n"
+            "1) Did the user correctly identify weak points in the text?\n"
+            "2) Did they point to specific statements or assumptions?\n"
+            "3) Did they propose testable ways to falsify or check the claims?\n"
+            "4) Is their reasoning clear and logically structured?\n"
+            "5) Does the critique match the education level of the original text (School → PhD)?\n\n"
+            "Output format:\n- Score: give a score from 1 to 10.\n- Strengths: list 2–3 things the user did well.\n- Weaknesses: list 2–3 areas for improvement.\n- Suggestion: one short tip to improve the critique next time.\n\n"
+            f"User critique:\n{crit}"
+        )
+        gen = self._make_prompt_stream_factory(prompt)
+        self._stream_text_to_edit(self.tech_eval, gen)
+
+    def on_tech_brutal(self):
+        desc = (self.tech_desc.toPlainText() or "").strip()
+        if not desc:
+            return
+        ln = self._lang_name()
+        prompt = (
+            f"Respond strictly in {ln}.\n\n"
+            "You are a critical technology evaluator. Given a description of a fictional device or technology, produce a rigorous, constructive, and uncompromising critique.\n\n"
+            "Your goals:\n"
+            "1. Identify pros (strengths): any plausible, well-explained, or innovative aspects.\n"
+            "2. Identify cons (weaknesses): hidden assumptions, logical flaws, vague or exaggerated claims, contradictions, engineering impossibilities, or unfalsifiable parts.\n"
+            "3. Suggest ways the device could be tested, improved, or reformulated.\n"
+            "4. Maintain a tough but professional tone: highlight the most serious flaws without softening the judgment.\n\n"
+            "Format:\n**Pros**: (bullet list)\n**Cons**: (bullet list)\n**Recommendations**: (short advice)\n\n"
+            f"Technology description:\n{desc}"
+        )
+        gen = self._make_prompt_stream_factory(prompt)
+        self._stream_text_to_edit(self.tech_eval, gen)
+
     def on_send(self):
         text = (self.input_edit.toPlainText() or "").strip()
         if not text:
