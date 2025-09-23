@@ -45,6 +45,25 @@ class StreamWorker(QObject):
             self.error.emit(str(e))
 
 
+class EditStreamWorker(QObject):
+    token = pyqtSignal(str)
+    finished = pyqtSignal()
+    error = pyqtSignal(str)
+
+    def __init__(self, gen_factory: Callable[[], Iterator[str]]):
+        super().__init__()
+        self._gen_factory = gen_factory
+
+    def run(self):
+        try:
+            for piece in self._gen_factory():
+                if piece:
+                    self.token.emit(piece)
+            self.finished.emit()
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class ChatInput(QPlainTextEdit):
     sendRequested = pyqtSignal()
 
@@ -97,6 +116,8 @@ class ChatWindow(QMainWindow):
         except Exception:
             pass
         self._load_prompts_from_settings()
+        # Streaming state for Popper tab editors
+        self._edit_streams: Dict[QPlainTextEdit, Dict[str, object]] = {}
 
     # --- UI Construction ---
     def _build_ui(self):
@@ -708,6 +729,53 @@ class ChatWindow(QMainWindow):
             self.chat_view.insertPlainText(more_text)
             self.chat_view.moveCursor(QTextCursor.MoveOperation.End)
 
+    # --- Streaming to arbitrary text edits (Popper tab) ---
+    def _stream_text_to_edit(self, edit: QPlainTextEdit, gen_factory: Callable[[], Iterator[str]]):
+        # Cancel previous stream for this edit if exists
+        prev = self._edit_streams.get(edit)
+        if prev:
+            try:
+                th = prev.get('thread')
+                if th:
+                    th.quit(); th.wait(100)
+            except Exception:
+                pass
+        edit.clear()
+        buffer: List[str] = []
+        thread = QThread()
+        worker = EditStreamWorker(gen_factory)
+        worker.moveToThread(thread)
+        def on_token(t: str):
+            buffer.append(t)
+            edit.setPlainText(''.join(buffer))
+            edit.moveCursor(QTextCursor.MoveOperation.End)
+        worker.token.connect(on_token)
+        worker.finished.connect(lambda: thread.quit())
+        worker.error.connect(lambda e: edit.appendPlainText(f"\n[Error: {e}]"))
+        thread.started.connect(worker.run)
+        thread.start()
+        self._edit_streams[edit] = {'thread': thread, 'worker': worker, 'buffer': buffer}
+
+    def _make_prompt_stream_factory(self, prompt: str) -> Callable[[], Iterator[str]]:
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        messages = [{"role": "user", "content": prompt}]
+        if eng == 'openai':
+            if self.openai_client is None:
+                self.openai_client = OpenAIClient()
+            client = self.openai_client
+            def gen():
+                yield from client.stream_chat(messages, model=model, temperature=temp)
+            return gen
+        else:
+            if self.ollama_client is None:
+                self.ollama_client = OllamaClient()
+            client = self.ollama_client
+            def gen():
+                yield from client.stream_chat(messages, model=model, temperature=temp)
+            return gen
+
     def _render_assistant_html(self, text: str) -> str:
         """Render assistant buffer with colored A:/B: lines."""
         lines = text.splitlines()
@@ -777,18 +845,10 @@ class ChatWindow(QMainWindow):
                 "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
             )
         try:
-            if eng == 'openai':
-                if self.openai_client is None:
-                    self.openai_client = OpenAIClient()
-                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
-            else:
-                if self.ollama_client is None:
-                    self.ollama_client = OllamaClient()
-                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+            gen_factory = self._make_prompt_stream_factory(prompt)
+            self._stream_text_to_edit(self.pop_theory, gen_factory)
         except Exception as e:
             QMessageBox.critical(self, "Popper", f"Synthesis failed: {e}")
-            return
-        self.pop_theory.setPlainText(text or "")
 
     def on_popper_check(self):
         theory = (self.pop_theory.toPlainText() or "").strip()
@@ -818,18 +878,10 @@ class ChatWindow(QMainWindow):
                 f"Theory:\n{theory}\n\nUser experiments/observations:\n{attempt}"
             )
         try:
-            if eng == 'openai':
-                if self.openai_client is None:
-                    self.openai_client = OpenAIClient()
-                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
-            else:
-                if self.ollama_client is None:
-                    self.ollama_client = OllamaClient()
-                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+            gen_factory = self._make_prompt_stream_factory(prompt)
+            self._stream_text_to_edit(self.pop_result, gen_factory)
         except Exception as e:
             QMessageBox.critical(self, "Popper", f"Evaluation failed: {e}")
-            return
-        self.pop_result.setPlainText(text or "")
 
     def on_popper_confirm(self):
         theory = (self.pop_theory.toPlainText() or "").strip()
@@ -855,18 +907,10 @@ class ChatWindow(QMainWindow):
                 f"Theory:\n{theory}\n\nExperiments/observations:\n{experiments}"
             )
         try:
-            if eng == 'openai':
-                if self.openai_client is None:
-                    self.openai_client = OpenAIClient()
-                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
-            else:
-                if self.ollama_client is None:
-                    self.ollama_client = OllamaClient()
-                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+            gen_factory = self._make_prompt_stream_factory(prompt)
+            self._stream_text_to_edit(self.pop_result, gen_factory)
         except Exception as e:
             QMessageBox.critical(self, "Popper", f"Critique failed: {e}")
-            return
-        self.pop_result.setPlainText(text or "")
 
     def on_popper_ai_toggle(self, state: int):
         show = state != 0
@@ -893,18 +937,10 @@ class ChatWindow(QMainWindow):
                 "Keep it concise, one per line.\n\nTheory:\n" + theory
             )
         try:
-            if eng == 'openai':
-                if self.openai_client is None:
-                    self.openai_client = OpenAIClient()
-                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
-            else:
-                if self.ollama_client is None:
-                    self.ollama_client = OllamaClient()
-                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+            gen_factory = self._make_prompt_stream_factory(prompt)
+            self._stream_text_to_edit(self.pop_ai_edit, gen_factory)
         except Exception as e:
             self.pop_ai_edit.setPlainText(f"Error: {e}")
-            return
-        self.pop_ai_edit.setPlainText(text or "")
 
     @staticmethod
     def _escape(text: str) -> str:
