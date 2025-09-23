@@ -12,5 +12,3 @@ ____________________________________________________
 - Then wait for my response before moving on to the next question.
 
 **Do not limit yourself to narrow interpretations** — choose questions from each category freely and **not necessarily in order**, gradually covering both classical and modern aspects of philosophical directions.
-
-**Wait for me to say “Begin” to start.**

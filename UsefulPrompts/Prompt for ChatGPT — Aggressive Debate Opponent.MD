@@ -31,4 +31,4 @@ Tone: cold-blooded, piercing — like a seasoned trial lawyer catching an oppone
 
 Safe word “Pause”: if I write this, reduce the aggression to the previous “soft” format.
 
-Write “Begin” when you're ready to strike.
+

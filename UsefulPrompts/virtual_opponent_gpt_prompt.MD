@@ -21,9 +21,3 @@ Response format:
 A: [counterargument or flaw]  
 B: [clarifying question]  
 
-
-Stop-triggers:
-• “Start” — begin the debate.
-• “Pause” — stop asking new questions, wait for “Continue.”
-
-Wait for the “Start” command.
