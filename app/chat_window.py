@@ -292,14 +292,20 @@ class ChatWindow(QMainWindow):
         pop_layout.addLayout(pop_controls)
         self.pop_lbl_d1 = QLabel("Discipline A")
         self.pop_d1 = QComboBox()
+        self.pop_lbl_s1 = QLabel("Subtopic A")
+        self.pop_s1 = QComboBox()
         self.pop_lbl_d2 = QLabel("Discipline B")
         self.pop_d2 = QComboBox()
+        self.pop_lbl_s2 = QLabel("Subtopic B")
+        self.pop_s2 = QComboBox()
         self.pop_syn_btn = QPushButton("Synthesize theory")
         self.pop_syn_btn.clicked.connect(self.on_popper_synthesize)
         pop_controls.addWidget(self.pop_lbl_d1)
         pop_controls.addWidget(self.pop_d1)
         pop_controls.addWidget(self.pop_lbl_d2)
         pop_controls.addWidget(self.pop_d2)
+        pop_controls.addWidget(self.pop_lbl_s2)
+        pop_controls.addWidget(self.pop_s2)
         pop_controls.addWidget(self.pop_syn_btn)
 
         self.pop_theory = QPlainTextEdit()
@@ -322,6 +328,12 @@ class ChatWindow(QMainWindow):
         pop_layout.addWidget(self.pop_result, stretch=1)
 
         self.tabs.addTab(pop_tab, "Popper Challenge")
+        # Wire popper subtopic updates
+        try:
+            self.pop_d1.currentIndexChanged.connect(self._on_popper_d1_changed)
+            self.pop_d2.currentIndexChanged.connect(self._on_popper_d2_changed)
+        except Exception:
+            pass
 
     def _load_prompts(self):
         # Fallback scanner if settings are not used
@@ -671,20 +683,60 @@ class ChatWindow(QMainWindow):
             return ""
         return "".join(out)
 
+    def _on_popper_d1_changed(self, idx: int):
+        try:
+            if cdn is None:
+                return
+            submap = getattr(cdn, 'subtopics', {})
+            d1 = self.pop_d1.currentText()
+            s1_list = submap.get(d1, [])
+            self.pop_s1.blockSignals(True)
+            self.pop_s1.clear()
+            if s1_list:
+                self.pop_s1.addItems(s1_list)
+        finally:
+            try:
+                self.pop_s1.blockSignals(False)
+            except Exception:
+                pass
+
+    def _on_popper_d2_changed(self, idx: int):
+        try:
+            if cdn is None:
+                return
+            submap = getattr(cdn, 'subtopics', {})
+            d2 = self.pop_d2.currentText()
+            self.pop_s2.blockSignals(True)
+            self.pop_s2.clear()
+            if d2:
+                s2_list = submap.get(d2, [])
+                if s2_list:
+                    self.pop_s2.addItems(s2_list)
+        finally:
+            try:
+                self.pop_s2.blockSignals(False)
+            except Exception:
+                pass
+
     # --- Popper Challenge actions ---
     def on_popper_synthesize(self):
         try:
             d1 = (self.pop_d1.currentText() or "").strip()
             d2 = (self.pop_d2.currentText() or "").strip()
+            s1 = (self.pop_s1.currentText() or "").strip()
+            s2 = (self.pop_s2.currentText() or "").strip()
         except Exception:
-            d1 = d2 = ""
+            d1 = d2 = s1 = s2 = ""
         if not d1 and not d2:
             QMessageBox.information(self, "Popper", "Select at least one discipline")
             return
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
-        domain_str = f"{d1}{' and ' + d2 if d2 else ''}".strip()
+        # Compose domain with optional subtopics
+        part1 = f"{d1}{' — ' + s1 if s1 else ''}" if d1 else ""
+        part2 = f"{d2}{' — ' + s2 if s2 else ''}" if d2 else ""
+        domain_str = part1 + (" and " + part2 if part2 else "")
         if (self.lang or '').lower() == 'ru':
             prompt = (
                 "Синтезируй краткую научно‑ориентированную теорию (3–6 предложений) в случайно выбранной области "
@@ -1045,12 +1097,13 @@ class ChatWindow(QMainWindow):
         if cdn is not None:
             try:
                 dis = list(getattr(cdn, 'disciplines', []))
+                submap = dict(getattr(cdn, 'subtopics', {}))
             except Exception:
-                dis = []
+                dis, submap = [], {}
         else:
-            dis = []
+            dis, submap = [], {}
         try:
-            self.pop_d1.clear(); self.pop_d2.clear()
+            self.pop_d1.clear(); self.pop_d2.clear(); self.pop_s1.clear(); self.pop_s2.clear()
             if dis:
                 # Discipline A: regular list
                 self.pop_d1.addItems(dis)
@@ -1058,12 +1111,20 @@ class ChatWindow(QMainWindow):
                 self.pop_d2.addItem("")
                 self.pop_d2.addItems(dis)
                 self.pop_d2.setCurrentIndex(0)
+                # Subtopics initial fill for A
+                d1 = self.pop_d1.currentText()
+                s1_list = submap.get(d1, [])
+                if s1_list:
+                    self.pop_s1.addItems(s1_list)
+                # B subtopics start empty until B chosen
         except Exception:
             pass
         try:
             self.tabs.setTabText(2, tx("tab_popper", "Popper Challenge"))
             self.pop_lbl_d1.setText(tx("popper_d1", "Discipline A"))
             self.pop_lbl_d2.setText(tx("popper_d2", "Discipline B"))
+            self.pop_lbl_s1.setText(tx("popper_s1", "Subtopic A"))
+            self.pop_lbl_s2.setText(tx("popper_s2", "Subtopic B"))
             self.pop_syn_btn.setText(tx("popper_synthesize", "Synthesize theory"))
             self.pop_user_lbl.setText(tx("popper_user_attempt", "Your falsification attempt"))
             self.pop_check_btn.setText(tx("popper_check", "Evaluate falsification"))

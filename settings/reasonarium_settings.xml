@@ -26,6 +26,8 @@
       <text key="tab_popper">Popper Challenge</text>
       <text key="popper_d1">Discipline A</text>
       <text key="popper_d2">Discipline B</text>
+      <text key="popper_s1">Subtopic A</text>
+      <text key="popper_s2">Subtopic B</text>
       <text key="popper_synthesize">Synthesize theory</text>
       <text key="popper_user_attempt">Your falsification attempt</text>
       <text key="popper_check">Evaluate falsification</text>
@@ -87,6 +89,8 @@
       <text key="tab_popper">Вызов Поппера</text>
       <text key="popper_d1">Дисциплина A</text>
       <text key="popper_d2">Дисциплина B</text>
+      <text key="popper_s1">Подтема A</text>
+      <text key="popper_s2">Подтема B</text>
       <text key="popper_synthesize">Синтезировать теорию</text>
       <text key="popper_user_attempt">Ваше опровержение</text>
       <text key="popper_check">Проверить опровержение</text>
