@@ -685,15 +685,26 @@ class ChatWindow(QMainWindow):
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
         domain_str = f"{d1}{' and ' + d2 if d2 else ''}".strip()
-        prompt = (
-            "Synthesize a short science-oriented theory (3–6 sentences) in a randomly chosen domain "
-            f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
-            "Then add three sections:\n"
-            "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
-            "B) Experiments/Observations — possible ways to falsify these predictions.\n"
-            "C) Unfalsifiable — identify any parts of the theory that cannot be tested, and explain why that is problematic.\n\n"
-            "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
-        )
+        if (self.lang or '').lower() == 'ru':
+            prompt = (
+                "Синтезируй краткую научно‑ориентированную теорию (3–6 предложений) в случайно выбранной области "
+                f"({domain_str}). Теория не должна повторять предыдущие темы (избегай фруктов, деревьев и чрезмерно узких мотивов).\n\n"
+                "Затем добавь три раздела:\n"
+                "A) Предсказания — не менее 2 чётких, проверяемых предсказаний, вытекающих из теории.\n"
+                "B) Эксперименты/Наблюдения — возможные способы сфальсифицировать эти предсказания.\n"
+                "C) Нефальсифицируемое — укажи части теории, которые нельзя проверить, и объясни, почему это проблематично.\n\n"
+                "Теория может быть серьёзной, игривой, причудливой или абсурдной — но она всё равно должна соответствовать попперовскому критерию научной проверяемости."
+            )
+        else:
+            prompt = (
+                "Synthesize a short science‑oriented theory (3–6 sentences) in a randomly chosen domain "
+                f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
+                "Then add three sections:\n"
+                "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
+                "B) Experiments/Observations — possible ways to falsify these predictions.\n"
+                "C) Unfalsifiable — identify any parts of the theory that cannot be tested, and explain why that is problematic.\n\n"
+                "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
+            )
         try:
             if eng == 'openai':
                 if self.openai_client is None:
