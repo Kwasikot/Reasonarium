@@ -296,10 +296,19 @@ class ChatWindow(QMainWindow):
         self.pop_d2 = QComboBox()
         self.pop_syn_btn = QPushButton("Synthesize theory")
         self.pop_syn_btn.clicked.connect(self.on_popper_synthesize)
+        # Levels: theory type and education level
+        self.pop_lvl_theory_lbl = QLabel("Theory type")
+        self.pop_lvl_theory = QComboBox()
+        self.pop_lvl_edu_lbl = QLabel("Education level")
+        self.pop_lvl_edu = QComboBox()
         pop_controls.addWidget(self.pop_lbl_d1)
         pop_controls.addWidget(self.pop_d1)
         pop_controls.addWidget(self.pop_lbl_d2)
         pop_controls.addWidget(self.pop_d2)
+        pop_controls.addWidget(self.pop_lvl_theory_lbl)
+        pop_controls.addWidget(self.pop_lvl_theory)
+        pop_controls.addWidget(self.pop_lvl_edu_lbl)
+        pop_controls.addWidget(self.pop_lvl_edu)
         pop_controls.addWidget(self.pop_syn_btn)
 
         self.pop_theory = QPlainTextEdit()
@@ -689,10 +698,13 @@ class ChatWindow(QMainWindow):
         temp = float(self.temp_spin.value())
         # Compose domain without subtopics
         domain_str = f"{d1}{' and ' + d2 if d2 else ''}".strip()
+        lvl_theory = (self.pop_lvl_theory.currentText() or "").strip()
+        lvl_edu = (self.pop_lvl_edu.currentText() or "").strip()
         if (self.lang or '').lower() == 'ru':
             prompt = (
                 "Синтезируй краткую научно‑ориентированную теорию (3–6 предложений) в случайно выбранной области "
                 f"({domain_str}). Теория не должна повторять предыдущие темы (избегай фруктов, деревьев и чрезмерно узких мотивов).\n\n"
+                f"Тип теории: {lvl_theory}. Уровень изложения: {lvl_edu}.\n\n"
                 "Затем добавь три раздела:\n"
                 "A) Предсказания — не менее 2 чётких, проверяемых предсказаний, вытекающих из теории.\n"
                 "B) Эксперименты/Наблюдения — возможные способы сфальсифицировать эти предсказания.\n"
@@ -703,6 +715,7 @@ class ChatWindow(QMainWindow):
             prompt = (
                 "Synthesize a short science‑oriented theory (3–6 sentences) in a randomly chosen domain "
                 f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
+                f"Theory type: {lvl_theory}. Education level: {lvl_edu}.\n\n"
                 "Then add three sections:\n"
                 "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
                 "B) Experiments/Observations — possible ways to falsify these predictions.\n"
@@ -1068,6 +1081,10 @@ class ChatWindow(QMainWindow):
             self.tabs.setTabText(2, tx("tab_popper", "Popper Challenge"))
             self.pop_lbl_d1.setText(tx("popper_d1", "Discipline A"))
             self.pop_lbl_d2.setText(tx("popper_d2", "Discipline B"))
+            self.pop_lvl_theory_lbl.setText(tx("popper_level_theory", "Theory type"))
+            self.pop_lvl_edu_lbl.setText(tx("popper_level_edu", "Education level"))
+            # Populate options per language
+            self._populate_popper_levels()
             self.pop_syn_btn.setText(tx("popper_synthesize", "Synthesize theory"))
             self.pop_user_lbl.setText(tx("popper_user_attempt", "Your falsification attempt"))
             self.pop_check_btn.setText(tx("popper_check", "Evaluate falsification"))
@@ -1123,6 +1140,59 @@ class ChatWindow(QMainWindow):
             self.whisper_combo.blockSignals(False)
         except Exception:
             pass
+
+    def _populate_popper_levels(self):
+        # Save selections
+        cur_theory = self.pop_lvl_theory.currentText() if self.pop_lvl_theory.count() else ""
+        cur_edu = self.pop_lvl_edu.currentText() if self.pop_lvl_edu.count() else ""
+        # Options per language
+        if (self.lang or '').lower() == 'ru':
+            theory_opts = [
+                "Trivial / Absurd — намеренно простая или сказочная",
+                "Folk / Intuitive — бытовое или интуитивное",
+                "Speculative / Pseudoscientific — правдоподобно, но с дырами",
+                "Scientific‑Style — близко к научной гипотезе",
+                "Advanced / Cross‑disciplinary — сложная, междисциплинарная",
+            ]
+            edu_opts = [
+                "School — базовый школьный уровень",
+                "Undergraduate (Bachelor) — базовые модели науки",
+                "Graduate (Master) — углублённые рассуждения",
+                "Doctoral / PhD — профессиональная детализация",
+            ]
+        else:
+            theory_opts = [
+                "Trivial / Absurd — deliberately simple or whimsical",
+                "Folk / Intuitive — everyday or intuitive",
+                "Speculative / Pseudoscientific — plausible but leaky",
+                "Scientific‑Style — resembles a scientific hypothesis",
+                "Advanced / Cross‑disciplinary — complex, multi‑domain",
+            ]
+            edu_opts = [
+                "School — very simple language",
+                "Undergraduate (Bachelor) — basic scientific models",
+                "Graduate (Master) — advanced reasoning",
+                "Doctoral / PhD — highly technical detail",
+            ]
+        # Fill combos
+        self.pop_lvl_theory.blockSignals(True)
+        self.pop_lvl_theory.clear()
+        self.pop_lvl_theory.addItems(theory_opts)
+        self.pop_lvl_theory.blockSignals(False)
+
+        self.pop_lvl_edu.blockSignals(True)
+        self.pop_lvl_edu.clear()
+        self.pop_lvl_edu.addItems(edu_opts)
+        self.pop_lvl_edu.blockSignals(False)
+        # Restore selection if possible
+        if cur_theory:
+            idx = self.pop_lvl_theory.findText(cur_theory)
+            if idx >= 0:
+                self.pop_lvl_theory.setCurrentIndex(idx)
+        if cur_edu:
+            idx = self.pop_lvl_edu.findText(cur_edu)
+            if idx >= 0:
+                self.pop_lvl_edu.setCurrentIndex(idx)
 
     def _populate_whisper_models(self):
         models = self.settings.whisper_models() if self.settings.ok() else []

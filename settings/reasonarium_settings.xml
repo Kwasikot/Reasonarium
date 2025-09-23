@@ -32,6 +32,8 @@
       <text key="popper_user_attempt">Your falsification attempt</text>
       <text key="popper_check">Evaluate falsification</text>
       <text key="popper_result">Evaluation</text>
+      <text key="popper_level_theory">Theory type</text>
+      <text key="popper_level_edu">Education level</text>
       <text key="voice_mode">Voice mode</text>
       <text key="speak">Speak…</text>
       <text key="read_aloud">Read aloud</text>
@@ -95,6 +97,8 @@
       <text key="popper_user_attempt">Ваше опровержение</text>
       <text key="popper_check">Проверить опровержение</text>
       <text key="popper_result">Оценка</text>
+      <text key="popper_level_theory">Тип теории</text>
+      <text key="popper_level_edu">Уровень образования</text>
       <text key="voice_mode">Голосовой режим</text>
       <text key="speak">Говорить…</text>
       <text key="read_aloud">Озвучить</text>
