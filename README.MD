@@ -31,6 +31,15 @@ Popper Challenge (short)
 - App synthesizes a short theory (any style, even whimsical), then you propose a falsification attempt.
 - LLM evaluates your attempt on three criteria: predictions, falsifiable experiments, unfalsifiable parts — and gives a brief score.
 
+Tech Skeptic Mode (short)
+- Trains “engineering skepticism”: find weak spots in attractive tech descriptions.
+- Pick Discipline (MIT‑style list) and Education Level (School/Undergraduate/Graduate/PhD).
+- Synthesize technology description: 5–8 sentences with deliberately embedded weaknesses (more subtle at higher levels).
+- Write your criticism; use:
+  - Analyze my criticism — scores 1–10 and lists strengths/weaknesses/suggestion.
+  - Brutal AI critique of technology — pros/cons/recommendations in a tough, constructive tone.
+- All outputs stream token‑by‑token and follow the current UI language.
+
 Configuration (XML)
 - `settings/reasonarium_settings.xml`
   - UI texts (EN/RU), prompt files per language
