@@ -343,6 +343,9 @@ class ChatWindow(QMainWindow):
         self.pop_confirm_btn.clicked.connect(self.on_popper_confirm)
         row_eval.addStretch(1)
         row_eval.addWidget(self.pop_check_btn)
+        self.pop_selfcrit_btn = QPushButton("Evaluate my critique")
+        self.pop_selfcrit_btn.clicked.connect(self.on_popper_eval_selfcrit)
+        row_eval.addWidget(self.pop_selfcrit_btn)
         row_eval.addWidget(self.pop_confirm_btn)
         pop_layout.addLayout(row_eval)
 
@@ -1217,8 +1220,9 @@ class ChatWindow(QMainWindow):
             self.pop_user_lbl.setText(tx("popper_user_experiments", "Your experiments / observations"))
             self.pop_ai_chk.setText(tx("popper_ai_show", "Show AI suggestions"))
             self.pop_ai_lbl.setText(tx("popper_ai_experiments", "AI experiments / observations"))
-            self.pop_check_btn.setText(tx("popper_check", "Evaluate falsification"))
-            self.pop_confirm_btn.setText(tx("popper_confirm", "Confirm experiment"))
+            self.pop_check_btn.setText(tx("popper_check", "Confirm"))
+            self.pop_selfcrit_btn.setText(tx("popper_eval_selfcrit", "Evaluate my critique"))
+            self.pop_confirm_btn.setText(tx("popper_confirm", "Brutal AI critique"))
             self.pop_result_lbl.setText(tx("popper_result", "Evaluation"))
         except Exception:
             pass
@@ -1468,3 +1472,49 @@ class ChatWindow(QMainWindow):
                 'yt_query': f'{picked} intro'
             })
         return {'meta': meta, 'items': items}
+    def on_popper_eval_selfcrit(self):
+        theory = (self.pop_theory.toPlainText() or "").strip()
+        usercrit = (self.pop_user_edit.toPlainText() or "").strip()
+        if not theory or not usercrit:
+            QMessageBox.information(self, "Popper", "Provide theory and your critique/experiments first")
+            return
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        temp = float(self.temp_spin.value())
+        if (self.lang or '').lower() == 'ru':
+            prompt = (
+                "Оцени критическое мышление пользователя на основе его критики теории. Сначала — теория, затем критика/эксперименты. "
+                "Признай сильные стороны, но ищи очевидные и неочевидные уязвимости. Структурируй ответ заголовками:\n\n"
+                "Плюсы критики:\n- ...\n\n"
+                "Минусы критики:\n- ...\n\n"
+                "Чего не хватает в критике:\n- ...\n\n"
+                "Когнитивные искажения:\n- ...\n\n"
+                "Психиатрическая перспектива:\n- ...\n\n"
+                "Заверши краткой суммарной оценкой (1–10) и рекомендациями по улучшению.\n\n"
+                f"Теория:\n{theory}\n\nКритика/эксперименты пользователя:\n{usercrit}"
+            )
+        else:
+            prompt = (
+                "Evaluate the user's critical thinking based on their critique of the theory. First comes the theory, then the user's critique/experiments. "
+                "Acknowledge strengths, but hunt for both obvious and subtle weaknesses. Structure the answer with headings:\n\n"
+                "Strengths of the critique:\n- ...\n\n"
+                "Weaknesses of the critique:\n- ...\n\n"
+                "What is missing:\n- ...\n\n"
+                "Cognitive biases detected:\n- ...\n\n"
+                "Psychiatric perspective (potential thinking pitfalls):\n- ...\n\n"
+                "Finish with a brief overall score (1–10) and concrete suggestions for improvement.\n\n"
+                f"Theory:\n{theory}\n\nUser critique/experiments:\n{usercrit}"
+            )
+        try:
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                text = self.openai_client.generate_text(prompt, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                text = self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+        except Exception as e:
+            QMessageBox.critical(self, "Popper", f"Critique evaluation failed: {e}")
+            return
+        self.pop_result.setPlainText(text or "")
