@@ -211,10 +211,13 @@ class ChatWindow(QMainWindow):
         self.new_btn.clicked.connect(self.on_new_chat)
         self.auto_btn = QPushButton("Auto answer")
         self.auto_btn.clicked.connect(self.on_auto_answer)
+        self.nextq_btn = QPushButton("Next question")
+        self.nextq_btn.clicked.connect(self.on_next_question)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
         input_row.addWidget(self.auto_btn)
+        input_row.addWidget(self.nextq_btn)
         chat_layout.addLayout(input_row)
         # Microphone row: selector + Record toggle (sounddevice backend)
         mic_row = QHBoxLayout()
@@ -605,6 +608,30 @@ class ChatWindow(QMainWindow):
             self.input_edit.setPlainText(suggestion)
         except Exception as e:
             QMessageBox.critical(self, "Auto answer", f"Failed: {e}")
+
+    def on_next_question(self):
+        try:
+            # Prepare minimal instruction based on UI language
+            if (self.lang or '').lower() == 'ru':
+                instr = "Пропусти критику: пользователь ничего не ответил. Задай следующий уточняющий вопрос."
+                display = "→ Следующий вопрос"
+            else:
+                instr = "Skip critique: the user did not answer. Ask the next clarifying question."
+                display = "→ Next question"
+
+            # Ensure system prompt on first turn
+            if not self.messages and self.current_system_prompt.strip():
+                self.messages.append({"role": "system", "content": self._compose_system_prompt()})
+
+            self.messages.append({"role": "user", "content": instr})
+            self._append_user(display)
+
+            # Start streaming reply
+            gen_factory = self._make_stream_factory()
+            self._append_assistant("")
+            self._start_stream(gen_factory)
+        except Exception as e:
+            QMessageBox.critical(self, "Next question", f"Failed: {e}")
 
     def on_send(self):
         text = (self.input_edit.toPlainText() or "").strip()
@@ -1143,6 +1170,8 @@ class ChatWindow(QMainWindow):
         self.new_btn.setText(tx("new_chat", "New Chat"))
         if hasattr(self, 'auto_btn'):
             self.auto_btn.setText(tx("auto_answer", "Auto answer"))
+        if hasattr(self, 'nextq_btn'):
+            self.nextq_btn.setText(tx("next_question", "Next question"))
         self.preview_box.setTitle(tx("prompt_preview", "Prompt Preview"))
         self.test_btn.setText(tx("test_openai", "Test OpenAI"))
         # Tabs

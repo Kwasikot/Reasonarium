@@ -20,6 +20,7 @@
       <text key="send">Send</text>
       <text key="new_chat">New Chat</text>
       <text key="auto_answer">Auto answer</text>
+      <text key="next_question">Next question</text>
       <text key="prompt_preview">Prompt Preview</text>
       <text key="tab_chat">Chat</text>
       <text key="tab_curiosity">Curiosity Drive</text>
@@ -89,6 +90,7 @@
       <text key="send">Отправить</text>
       <text key="new_chat">Новый чат</text>
       <text key="auto_answer">Автоответ</text>
+      <text key="next_question">Следующий вопрос</text>
       <text key="prompt_preview">Предпросмотр промта</text>
       <text key="tab_chat">Чат</text>
       <text key="tab_curiosity">Curiosity Drive</text>
