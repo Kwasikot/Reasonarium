@@ -4,7 +4,7 @@ from typing import Optional, List, Dict
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
     QPushButton, QListWidget, QListWidgetItem, QMessageBox,
-    QSpinBox, QLineEdit
+    QSpinBox, QPlainTextEdit
 )
 
 try:
@@ -73,8 +73,8 @@ class DebateTopicDialog(QDialog):
         # Custom user question
         custom_row = QHBoxLayout()
         layout.addLayout(custom_row)
-        self.custom_label = QLabel("Custom question")
-        self.custom_edit = QLineEdit()
+        self.custom_label = QLabel("Custom question / context")
+        self.custom_edit = QPlainTextEdit()
         custom_row.addWidget(self.custom_label)
         custom_row.addWidget(self.custom_edit)
 
@@ -125,7 +125,7 @@ class DebateTopicDialog(QDialog):
             QMessageBox.information(self, "LLM", "No questions generated.")
 
     def on_accept(self):
-        custom = (self.custom_edit.text() or "").strip()
+        custom = (self.custom_edit.toPlainText() or "").strip()
         if custom:
             self.selected_question = custom
         else:
