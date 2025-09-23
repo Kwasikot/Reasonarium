@@ -711,16 +711,23 @@ class ChatWindow(QMainWindow):
         out: List[str] = []
         re_a = re.compile(r"^\s*A\s*[:\.-]\s*(.*)$", re.IGNORECASE)
         re_b = re.compile(r"^\s*B\s*[:\.-]\s*(.*)$", re.IGNORECASE)
+        # Load colors from settings (with defaults)
+        try:
+            cols = self.settings.colors() if self.settings.ok() else {}
+            col_a = cols.get("counterargument", "#fbc02d")
+            col_b = cols.get("question", "#7CFC00")
+        except Exception:
+            col_a, col_b = "#fbc02d", "#7CFC00"
         for ln in lines:
             m = re_a.match(ln)
             if m:
                 body = self._escape(m.group(1))
-                out.append(f"<div style='color:#fbc02d'><b>A:</b> {body}</div>")
+                out.append(f"<div style='color:{col_a}'><b>A:</b> {body}</div>")
                 continue
             m = re_b.match(ln)
             if m:
                 body = self._escape(m.group(1))
-                out.append(f"<div style='color:#2e7d32'><b>B:</b> {body}</div>")
+                out.append(f"<div style='color:{col_b}'><b>B:</b> {body}</div>")
                 continue
             out.append(f"<div>{self._escape(ln)}</div>")
         if not lines:

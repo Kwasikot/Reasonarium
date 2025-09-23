@@ -149,6 +149,21 @@ class Settings:
             return None
         return mroot.get("default")
 
+    def colors(self) -> dict:
+        root = self._root
+        out = {}
+        if root is None:
+            return out
+        cnode = root.find("colors")
+        if cnode is None:
+            return out
+        def txt(tag: str, default: str = "") -> str:
+            el = cnode.find(tag)
+            return (el.text or default).strip() if el is not None else default
+        out["counterargument"] = txt("counterargument", "#fbc02d")
+        out["question"] = txt("question", "#7CFC00")
+        return out
+
     # --- Ollama settings ---
     def ollama_endpoint(self) -> Optional[str]:
         root = self._root

@@ -231,4 +231,12 @@
     <model>gpt-4.1</model>
     <model>o3-mini</model>
   </openai_models>
+
+  <!-- UI colors -->
+  <colors>
+    <!-- Counterargument (A:) color -->
+    <counterargument>#fbc02d</counterargument>
+    <!-- Question (B:) color; bright lime green by default -->
+    <question>#7CFC00</question>
+  </colors>
 </settings>
