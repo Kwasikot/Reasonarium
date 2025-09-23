@@ -205,9 +205,12 @@ class ChatWindow(QMainWindow):
         self.input_edit.sendRequested.connect(self.on_send)
         self.new_btn = QPushButton("New Chat")
         self.new_btn.clicked.connect(self.on_new_chat)
+        self.auto_btn = QPushButton("Auto answer")
+        self.auto_btn.clicked.connect(self.on_auto_answer)
         input_row.addWidget(self.input_edit, stretch=1)
         input_row.addWidget(self.send_btn)
         input_row.addWidget(self.new_btn)
+        input_row.addWidget(self.auto_btn)
         chat_layout.addLayout(input_row)
         # Microphone row: selector + Record toggle (sounddevice backend)
         mic_row = QHBoxLayout()
@@ -473,6 +476,62 @@ class ChatWindow(QMainWindow):
         if self.current_system_prompt.strip():
             self.messages.append({"role": "system", "content": self._compose_system_prompt()})
         self._append_info("New chat started.")
+
+    def on_auto_answer(self):
+        # Build a suggested user answer to the latest assistant question (or input text)
+        try:
+            # Find last assistant message as the question context
+            question = (self.input_edit.toPlainText() or "").strip()
+            for m in reversed(self.messages):
+                if m.get("role") == "assistant" and (m.get("content") or "").strip():
+                    question = m.get("content").strip()
+                    break
+            if not question:
+                QMessageBox.information(self, "Auto answer", "No question to answer.")
+                return
+
+            # Instruction by language
+            if (self.lang or '').lower() == 'ru':
+                instr = (
+                    "Сформулируй максимально адекватный, аргументированный и краткий ответ (2–4 абзаца) на вопрос ниже,"
+                    " выступая в роли пользователя. Учитывай контекст переписки. Верни только текст ответа без префиксов."
+                )
+                ucontent = f"{instr}\n\nВопрос:\n{question}"
+            else:
+                instr = (
+                    "Write the most reasonable, well‑argued, concise answer (2–4 paragraphs) to the question below,"
+                    " acting as the user. Consider chat context. Return only the answer, no prefixes."
+                )
+                ucontent = f"{instr}\n\nQuestion:\n{question}"
+
+            # Prepare messages with current context + instruction
+            msgs = list(self.messages)
+            # Ensure a system prompt exists
+            if not msgs and self.current_system_prompt.strip():
+                msgs.append({"role": "system", "content": self._compose_system_prompt()})
+            msgs.append({"role": "user", "content": ucontent})
+
+            model = (self.model_combo.currentText() or None)
+            temp = float(self.temp_spin.value())
+            eng = self.engine_combo.currentText().strip().lower()
+
+            if eng == 'openai':
+                if self.openai_client is None:
+                    self.openai_client = OpenAIClient()
+                suggestion = self.openai_client.generate_chat(msgs, model=model, temperature=temp)
+            else:
+                if self.ollama_client is None:
+                    self.ollama_client = OllamaClient()
+                suggestion = self.ollama_client.generate_chat(msgs, model=model, temperature=temp)
+
+            suggestion = (suggestion or "").strip()
+            if not suggestion:
+                QMessageBox.information(self, "Auto answer", "No suggestion produced.")
+                return
+            # Put into input for user to review/edit
+            self.input_edit.setPlainText(suggestion)
+        except Exception as e:
+            QMessageBox.critical(self, "Auto answer", f"Failed: {e}")
 
     def on_send(self):
         text = (self.input_edit.toPlainText() or "").strip()
@@ -853,6 +912,8 @@ class ChatWindow(QMainWindow):
         self.start_session_btn.setText(tx("start_session", "Start Session…"))
         self.send_btn.setText(tx("send", "Send"))
         self.new_btn.setText(tx("new_chat", "New Chat"))
+        if hasattr(self, 'auto_btn'):
+            self.auto_btn.setText(tx("auto_answer", "Auto answer"))
         self.preview_box.setTitle(tx("prompt_preview", "Prompt Preview"))
         self.test_btn.setText(tx("test_openai", "Test OpenAI"))
         # Tabs

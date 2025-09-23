@@ -19,6 +19,7 @@
       <text key="start_session">Start Session…</text>
       <text key="send">Send</text>
       <text key="new_chat">New Chat</text>
+      <text key="auto_answer">Auto answer</text>
       <text key="prompt_preview">Prompt Preview</text>
       <text key="tab_chat">Chat</text>
       <text key="tab_curiosity">Curiosity Drive</text>
@@ -72,6 +73,7 @@
       <text key="start_session">Начать сессию…</text>
       <text key="send">Отправить</text>
       <text key="new_chat">Новый чат</text>
+      <text key="auto_answer">Автоответ</text>
       <text key="prompt_preview">Предпросмотр промта</text>
       <text key="tab_chat">Чат</text>
       <text key="tab_curiosity">Curiosity Drive</text>
