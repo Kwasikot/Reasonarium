@@ -41,6 +41,12 @@
       <text key="topic_philo">Enter philosophical topic</text>
       <text key="topic_generic">Enter topic (optional)</text>
       <text key="test_openai">Test OpenAI</text>
+      <text key="debate_dialog">Debate Topic</text>
+      <text key="debate_discipline">Discipline</text>
+      <text key="debate_subtopic">Subtopic</text>
+      <text key="debate_generate">Generate</text>
+      <text key="debate_ok">OK</text>
+      <text key="debate_cancel">Cancel</text>
       <!-- Modes (display names) -->
       <text key="mode.general">General Chat</text>
       <text key="mode.rationality">Rationality Drive</text>
@@ -86,6 +92,12 @@
       <text key="topic_philo">Введите тему философской беседы</text>
       <text key="topic_generic">Введите тему (опционально)</text>
       <text key="test_openai">Проверить OpenAI</text>
+      <text key="debate_dialog">Тема дебатов</text>
+      <text key="debate_discipline">Дисциплина</text>
+      <text key="debate_subtopic">Подтема</text>
+      <text key="debate_generate">Сгенерировать</text>
+      <text key="debate_ok">ОК</text>
+      <text key="debate_cancel">Отмена</text>
       <!-- Modes (display names) -->
       <text key="mode.general">Обычный чат</text>
       <text key="mode.rationality">Rationality Drive</text>

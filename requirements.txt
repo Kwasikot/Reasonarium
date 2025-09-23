@@ -5,6 +5,13 @@ python-dotenv>=1.0
 rich>=13.7
 sounddevice>=0.4
 # Whisper needs modern NumPy; align with 2.2+
-numpy>=2.2,<2.3
+numpy==1.24.4
+
 # Whisper package name on PyPI is openai-whisper; import remains `whisper`
-openai-whisper>=20231117
+# --- Whisper (speech recognition) ---
+openai-whisper==20231117
+#torch==2.3.1 --extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- Voice control (optional) ---
+sounddevice==0.4.6
+webrtcvad==2.0.10

@@ -1,5 +1,13 @@
 from __future__ import annotations
 from typing import Optional, Callable, List
+import time
+import threading
+import queue
+import numpy as np
+try:
+    import sounddevice as sd  # type: ignore
+except Exception:
+    sd = None  # type: ignore
 import os
 
 
@@ -164,4 +172,3 @@ class WhisperStream:
             return 0.0
         x = np.frombuffer(frame, dtype=np.int16).astype(np.float32)
         return float(np.sqrt(np.mean(x * x)) + 1e-6)
-

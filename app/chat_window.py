@@ -9,7 +9,7 @@ from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QTextBrowser, QPlainTextEdit,
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
-    QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox
+    QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox, QDialog
 )
 from PyQt6.QtCore import QUrl
 
@@ -17,8 +17,9 @@ from app.prompts_loader import read_prompt
 from app.settings_loader import Settings
 from llm.openai_client import LLMClient as OpenAIClient
 from app.audio_recorder import AudioRecorder
-from app.local_stt import transcribe_whisper, WhisperStream
+from app.local_stt import transcribe_whisper
 from llm.ollama_client import OllamaClient
+from app.debate_topic_dialog import DebateTopicDialog
 
 
 class StreamWorker(QObject):
@@ -356,9 +357,40 @@ class ChatWindow(QMainWindow):
         elif pid == "philosophy_reflection":
             topic_title = self._t("topic_philo", "Enter philosophical topic")
 
-        topic, ok = QInputDialog.getText(self, "Reasonarium", topic_title)
-        if not ok:
-            return
+        # Use debate dialog for some modes
+        use_dialog = pid in {"virtual_opponent", "aggressive_opponent"}
+        if use_dialog:
+            def _llm_generate_text(prompt: str) -> str:
+                model = (self.model_combo.currentText() or None)
+                temp = float(self.temp_spin.value())
+                eng = self.engine_combo.currentText().strip().lower()
+                if eng == 'openai':
+                    if self.openai_client is None:
+                        self.openai_client = OpenAIClient()
+                    return self.openai_client.generate_text(prompt, model=model, temperature=temp)
+                else:
+                    if self.ollama_client is None:
+                        self.ollama_client = OllamaClient()
+                    return self.ollama_client.generate_text(prompt, model=model, temperature=temp)
+
+            dlg = DebateTopicDialog(lang=self.lang, llm_generate_text=_llm_generate_text, parent=self)
+            # Localize labels
+            t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
+            dlg.setWindowTitle(t.get("debate_dialog") or "Debate Topic")
+            dlg.disc_label.setText(t.get("debate_discipline") or "Discipline")
+            dlg.sub_label.setText(t.get("debate_subtopic") or "Subtopic")
+            dlg.gen_btn.setText(t.get("debate_generate") or "Generate")
+            dlg.ok_btn.setText(t.get("debate_ok") or "OK")
+            dlg.cancel_btn.setText(t.get("debate_cancel") or "Cancel")
+            if dlg.exec() != QDialog.DialogCode.Accepted:
+                return
+            topic = dlg.selected_question or ""
+            if not topic:
+                return
+        else:
+            topic, ok = QInputDialog.getText(self, "Reasonarium", topic_title)
+            if not ok:
+                return
 
         # Apply template replacement if present
         self._last_topic = (topic or "").strip() or None
