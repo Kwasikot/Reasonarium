@@ -3,7 +3,8 @@ from typing import Optional, List, Dict
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QPushButton, QListWidget, QListWidgetItem, QMessageBox
+    QPushButton, QListWidget, QListWidgetItem, QMessageBox,
+    QSpinBox, QLineEdit
 )
 
 try:
@@ -18,6 +19,12 @@ class DebateTopicDialog(QDialog):
     def __init__(self, *, lang: str, llm_generate_text, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Debate Topic")
+        # Make dialog wider/taller by default
+        try:
+            self.setMinimumWidth(820)
+            self.setMinimumHeight(560)
+        except Exception:
+            pass
         self.lang = (lang or "en").lower()
         self.llm_generate_text = llm_generate_text  # callable(prompt:str)->str
         self.selected_question: Optional[str] = None
@@ -41,6 +48,13 @@ class DebateTopicDialog(QDialog):
         self.disc_combo.currentIndexChanged.connect(self._on_disc_changed)
         top.addWidget(self.disc_label)
         top.addWidget(self.disc_combo)
+        # Count spinbox
+        self.count_label = QLabel("Count")
+        self.count_spin = QSpinBox()
+        self.count_spin.setRange(1, 100)
+        self.count_spin.setValue(20)
+        top.addWidget(self.count_label)
+        top.addWidget(self.count_spin)
 
         sub_row = QHBoxLayout()
         layout.addLayout(sub_row)
@@ -55,6 +69,14 @@ class DebateTopicDialog(QDialog):
         self.gen_btn.clicked.connect(self.on_generate)
         gen_row.addStretch(1)
         gen_row.addWidget(self.gen_btn)
+
+        # Custom user question
+        custom_row = QHBoxLayout()
+        layout.addLayout(custom_row)
+        self.custom_label = QLabel("Custom question")
+        self.custom_edit = QLineEdit()
+        custom_row.addWidget(self.custom_label)
+        custom_row.addWidget(self.custom_edit)
 
         self.list_widget = QListWidget()
         layout.addWidget(self.list_widget, stretch=1)
@@ -85,16 +107,17 @@ class DebateTopicDialog(QDialog):
         if not disc or not sub:
             QMessageBox.warning(self, "Debate", "Select discipline and subtopic")
             return
-        prompt = self._build_prompt(disc, sub)
+        n = int(self.count_spin.value())
+        prompt = self._build_prompt(disc, sub, n)
         try:
             text = self.llm_generate_text(prompt)
         except Exception as e:
             QMessageBox.critical(self, "LLM", f"Generation failed: {e}")
             return
         items = [ln.strip(" -\t") for ln in (text or "").splitlines() if ln.strip()]
-        # Keep exactly 20 where possible
-        if len(items) > 20:
-            items = items[:20]
+        # Keep exactly N where possible
+        if len(items) > n:
+            items = items[:n]
         self.list_widget.clear()
         for q in items:
             QListWidgetItem(q, self.list_widget)
@@ -102,16 +125,25 @@ class DebateTopicDialog(QDialog):
             QMessageBox.information(self, "LLM", "No questions generated.")
 
     def on_accept(self):
-        it = self.list_widget.currentItem()
-        if it is None:
-            QMessageBox.information(self, "Debate", "Pick a question from the list.")
-            return
-        self.selected_question = it.text()
+        custom = (self.custom_edit.text() or "").strip()
+        if custom:
+            self.selected_question = custom
+        else:
+            it = self.list_widget.currentItem()
+            if it is None:
+                QMessageBox.information(self, "Debate", "Pick a question from the list or write a custom one.")
+                return
+            self.selected_question = it.text()
         self.accept()
 
-    def _build_prompt(self, disc: str, sub: str) -> str:
+    def _build_prompt(self, disc: str, sub: str, n: int) -> str:
         if self.lang == 'ru':
-            return f"Выбери наиболее спорные вопросы по дисциплине {disc} и подтеме {sub}. Выбери ровно 20 вопросов. Выведи каждый вопрос с новой строки."
+            return (
+                f"Выбери наиболее спорные вопросы по дисциплине {disc} и подтеме {sub}. "
+                f"Выбери ровно {n} вопросов. Выведи каждый вопрос с новой строки."
+            )
         else:
-            return f"Pick the most controversial questions for the discipline {disc} and subtopic {sub}. Choose exactly 20 questions. Output one question per line."
-
+            return (
+                f"Pick the most controversial questions for the discipline {disc} and subtopic {sub}. "
+                f"Choose exactly {n} questions. Output one question per line."
+            )

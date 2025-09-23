@@ -380,6 +380,10 @@ class ChatWindow(QMainWindow):
             dlg.disc_label.setText(t.get("debate_discipline") or "Discipline")
             dlg.sub_label.setText(t.get("debate_subtopic") or "Subtopic")
             dlg.gen_btn.setText(t.get("debate_generate") or "Generate")
+            if hasattr(dlg, 'count_label'):
+                dlg.count_label.setText(t.get("debate_count") or "Count")
+            if hasattr(dlg, 'custom_label'):
+                dlg.custom_label.setText(t.get("debate_custom") or "Custom question")
             dlg.ok_btn.setText(t.get("debate_ok") or "OK")
             dlg.cancel_btn.setText(t.get("debate_cancel") or "Cancel")
             if dlg.exec() != QDialog.DialogCode.Accepted:

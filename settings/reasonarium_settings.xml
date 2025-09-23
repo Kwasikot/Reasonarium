@@ -45,6 +45,8 @@
       <text key="debate_discipline">Discipline</text>
       <text key="debate_subtopic">Subtopic</text>
       <text key="debate_generate">Generate</text>
+      <text key="debate_count">Count</text>
+      <text key="debate_custom">Custom question</text>
       <text key="debate_ok">OK</text>
       <text key="debate_cancel">Cancel</text>
       <!-- Modes (display names) -->
@@ -96,6 +98,8 @@
       <text key="debate_discipline">Дисциплина</text>
       <text key="debate_subtopic">Подтема</text>
       <text key="debate_generate">Сгенерировать</text>
+      <text key="debate_count">Количество</text>
+      <text key="debate_custom">Свой вопрос</text>
       <text key="debate_ok">ОК</text>
       <text key="debate_cancel">Отмена</text>
       <!-- Modes (display names) -->
