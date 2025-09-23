@@ -726,7 +726,6 @@ class ChatWindow(QMainWindow):
                 f"Тип теории: {lvl_theory}. Уровень изложения: {lvl_edu}.\n\n"
                 "Затем добавь три раздела:\n"
                 "A) Предсказания — не менее 2 чётких, проверяемых предсказаний, вытекающих из теории.\n"
-                "B) Эксперименты/Наблюдения — возможные способы сфальсифицировать эти предсказания.\n"
                 "C) Нефальсифицируемое — укажи части теории, которые нельзя проверить, и объясни, почему это проблематично.\n\n"
                 "Теория может быть серьёзной, игривой, причудливой или абсурдной — но она всё равно должна соответствовать попперовскому критерию научной проверяемости."
             )
@@ -737,7 +736,6 @@ class ChatWindow(QMainWindow):
                 f"Theory type: {lvl_theory}. Education level: {lvl_edu}.\n\n"
                 "Then add three sections:\n"
                 "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
-                "B) Experiments/Observations — possible ways to falsify these predictions.\n"
                 "C) Unfalsifiable — identify any parts of the theory that cannot be tested, and explain why that is problematic.\n\n"
                 "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
             )

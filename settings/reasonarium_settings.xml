@@ -33,8 +33,8 @@
       <text key="popper_user_experiments">Your experiments / observations</text>
       <text key="popper_ai_show">Show AI suggestions</text>
       <text key="popper_ai_experiments">AI experiments / observations</text>
-      <text key="popper_check">Evaluate falsification</text>
-      <text key="popper_confirm">Confirm experiment</text>
+      <text key="popper_check">Confirm</text>
+      <text key="popper_confirm">Brutal critics</text>
       <text key="popper_result">Evaluation</text>
       <text key="popper_level_theory">Theory type</text>
       <text key="popper_level_edu">Education level</text>
@@ -102,8 +102,8 @@
       <text key="popper_user_experiments">Ваши эксперименты / наблюдения</text>
       <text key="popper_ai_show">Показать идеи ИИ</text>
       <text key="popper_ai_experiments">Эксперименты / наблюдения ИИ</text>
-      <text key="popper_check">Проверить опровержение</text>
-      <text key="popper_confirm">Подтвердить эксперимент</text>
+      <text key="popper_check">Подтвердить</text>
+      <text key="popper_confirm">Жёсткая критика</text>
       <text key="popper_result">Оценка</text>
       <text key="popper_level_theory">Тип теории</text>
       <text key="popper_level_edu">Уровень образования</text>
