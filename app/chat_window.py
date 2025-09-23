@@ -1052,8 +1052,12 @@ class ChatWindow(QMainWindow):
         try:
             self.pop_d1.clear(); self.pop_d2.clear()
             if dis:
+                # Discipline A: regular list
                 self.pop_d1.addItems(dis)
+                # Discipline B: add empty option first, then list
+                self.pop_d2.addItem("")
                 self.pop_d2.addItems(dis)
+                self.pop_d2.setCurrentIndex(0)
         except Exception:
             pass
         try:
