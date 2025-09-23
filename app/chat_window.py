@@ -756,13 +756,27 @@ class ChatWindow(QMainWindow):
         prompt = (
             f"Respond strictly in {ln}.\n\n"
             "You are a critical technology evaluator. Given a description of a fictional device or technology, produce a rigorous, constructive, and uncompromising critique. Give me most brutally honest constructive criticism you can. \n\n"
-            "Your goals:\n"
-            "1. Identify pros (strengths): any plausible, well-explained, or innovative aspects.\n"
-            "2. Identify cons (weaknesses): hidden assumptions, logical flaws, vague or exaggerated claims, contradictions, engineering impossibilities, or unfalsifiable parts.\n"
-            "3. Suggest ways the device could be tested, improved, or reformulated.\n"
-            "4. Maintain a tough but professional tone: highlight the most serious flaws without softening the judgment.\n"
-            "5. Apply first-principles analysis to test whether the proposed mechanism can exist within the boundaries of current physical laws \n"
-            "Format:\n**Pros**: (bullet list)\n**Cons**: (bullet list)\n**Recommendations**: (short advice)\n\n"
+             "Your goals:\n"
+            "1. Quote & Critique — select 3–5 short verbatim quotes (≤25 words each) from the text that are notable or questionable; "
+            "after each quote provide a tough, first-principles critique (identify hidden assumptions, contradictions, missing mechanisms; "
+            "check consistency with known physical laws and engineering constraints; state what data/equations would be required).\n"
+   
+           
+            "2. Identify pros (strengths): any plausible, well-explained, or innovative aspects.\n"
+            "3. Identify cons (weaknesses): hidden assumptions, logical flaws, vague or exaggerated claims, contradictions, engineering impossibilities, or unfalsifiable parts.\n"
+            "4. Suggest ways the device could be tested, improved, or reformulated.\n"
+            "5. Maintain a tough but professional tone: highlight the most serious flaws without softening the judgment.\n"
+            "6. Analyze device using first principles framework, try to understand is it even possible in our physical laws \n"
+            
+            "Format:"
+            "**Quote & Critique**:\n"
+            "- **Quote:** \"...\"\n"
+            "  **Critique:** ...\n"
+            "(repeat 3–5 times)\n"
+            "\n**Pros**:\n- ...\n- ...\n"
+            "\n**Cons**:\n- ...\n- ...\n"
+            "**Recommendations**: (short advice)\n\n"
+
             f"Technology description:\n{desc}"
         )
         gen = self._make_prompt_stream_factory(prompt)
