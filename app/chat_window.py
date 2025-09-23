@@ -9,7 +9,8 @@ from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QTextBrowser, QPlainTextEdit,
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
-    QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox, QDialog
+    QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox, QDialog,
+    QTextEdit,
 )
 from PyQt6.QtCore import QUrl
 
@@ -20,6 +21,7 @@ from app.audio_recorder import AudioRecorder
 from app.local_stt import transcribe_whisper
 from llm.ollama_client import OllamaClient
 from app.debate_topic_dialog import DebateTopicDialog
+from app.markdown_edit import MarkdownTextEdit
 try:
     import curiosity_drive_node as cdn  # disciplines/subtopics lists
 except Exception:
@@ -335,27 +337,36 @@ class ChatWindow(QMainWindow):
         pop_controls.addWidget(self.pop_lvl_edu)
         pop_controls.addWidget(self.pop_syn_btn)
 
-        self.pop_theory = QPlainTextEdit()
+        self.pop_theory = MarkdownTextEdit(render_markdown=True)
         self.pop_theory.setReadOnly(True)
         pop_layout.addWidget(self.pop_theory, stretch=1)
 
+        # Split middle controls and bottom evaluation with a vertical splitter
+        self.pop_splitter = QSplitter(Qt.Orientation.Vertical)
+        pop_layout.addWidget(self.pop_splitter, stretch=2)
+
+        # Middle (hideable) panel
+        self.pop_center_box = QWidget()
+        center_layout = QVBoxLayout(self.pop_center_box)
+
         self.pop_user_lbl = QLabel("Your experiments / observations")
-        self.pop_user_edit = QPlainTextEdit()
-        pop_layout.addWidget(self.pop_user_lbl)
-        pop_layout.addWidget(self.pop_user_edit)
+        # Allow users to type raw Markdown, with optional preview via context menu
+        self.pop_user_edit = MarkdownTextEdit(render_markdown=False)
+        center_layout.addWidget(self.pop_user_lbl)
+        center_layout.addWidget(self.pop_user_edit)
 
         # Optional AI suggestions
         from PyQt6.QtWidgets import QCheckBox
         self.pop_ai_chk = QCheckBox("Show AI suggestions")
         self.pop_ai_chk.stateChanged.connect(self.on_popper_ai_toggle)
-        pop_layout.addWidget(self.pop_ai_chk)
+        center_layout.addWidget(self.pop_ai_chk)
         self.pop_ai_lbl = QLabel("AI experiments / observations")
-        self.pop_ai_edit = QPlainTextEdit()
+        self.pop_ai_edit = MarkdownTextEdit(render_markdown=True)
         self.pop_ai_edit.setReadOnly(True)
         self.pop_ai_lbl.setVisible(False)
         self.pop_ai_edit.setVisible(False)
-        pop_layout.addWidget(self.pop_ai_lbl)
-        pop_layout.addWidget(self.pop_ai_edit)
+        center_layout.addWidget(self.pop_ai_lbl)
+        center_layout.addWidget(self.pop_ai_edit)
 
         row_eval = QHBoxLayout()
         self.pop_check_btn = QPushButton("Evaluate falsification")
@@ -368,13 +379,31 @@ class ChatWindow(QMainWindow):
         self.pop_selfcrit_btn.clicked.connect(self.on_popper_eval_selfcrit)
         row_eval.addWidget(self.pop_selfcrit_btn)
         row_eval.addWidget(self.pop_confirm_btn)
-        pop_layout.addLayout(row_eval)
+        center_layout.addLayout(row_eval)
 
+        # Bottom evaluation panel
+        self.pop_bottom_box = QWidget()
+        bottom_layout = QVBoxLayout(self.pop_bottom_box)
         self.pop_result_lbl = QLabel("Evaluation")
-        self.pop_result = QPlainTextEdit()
+        self.pop_result = MarkdownTextEdit(render_markdown=True)
         self.pop_result.setReadOnly(True)
-        pop_layout.addWidget(self.pop_result_lbl)
-        pop_layout.addWidget(self.pop_result, stretch=1)
+        bottom_layout.addWidget(self.pop_result_lbl)
+        bottom_layout.addWidget(self.pop_result, stretch=1)
+
+        # Add to splitter
+        self.pop_splitter.addWidget(self.pop_center_box)
+        self.pop_splitter.addWidget(self.pop_bottom_box)
+        self.pop_splitter.setSizes([300, 500])
+        self.pop_splitter.setStretchFactor(0, 1)
+        self.pop_splitter.setStretchFactor(1, 2)
+
+        # Toggle to hide/show the middle panel
+        from PyQt6.QtWidgets import QCheckBox as _QCB
+        self.pop_center_toggle = _QCB("Show middle panel")
+        self.pop_center_toggle.setChecked(True)
+        self.pop_center_toggle.stateChanged.connect(self.on_popper_toggle_center)
+        # Put the toggle into controls row at the end
+        pop_controls.addWidget(self.pop_center_toggle)
 
         self.tabs.addTab(pop_tab, "Popper Challenge")
         # (No subtopic comboboxes; only disciplines)
@@ -397,13 +426,14 @@ class ChatWindow(QMainWindow):
         tech_controls.addWidget(self.tech_synth_btn)
 
         self.tech_desc_lbl = QLabel("Technology description")
-        self.tech_desc = QPlainTextEdit()
+        self.tech_desc = MarkdownTextEdit(render_markdown=True)
         self.tech_desc.setReadOnly(True)
         tech_layout.addWidget(self.tech_desc_lbl)
         tech_layout.addWidget(self.tech_desc, stretch=1)
 
         self.tech_usercrit_lbl = QLabel("Your criticism")
-        self.tech_usercrit = QPlainTextEdit()
+        # User edits in raw Markdown by default; toggle preview in context menu
+        self.tech_usercrit = MarkdownTextEdit(render_markdown=False)
         tech_layout.addWidget(self.tech_usercrit_lbl)
         tech_layout.addWidget(self.tech_usercrit)
 
@@ -418,7 +448,7 @@ class ChatWindow(QMainWindow):
         tech_buttons.addWidget(self.tech_brutal_btn)
 
         self.tech_eval_lbl = QLabel("Evaluation")
-        self.tech_eval = QPlainTextEdit()
+        self.tech_eval = MarkdownTextEdit(render_markdown=True)
         self.tech_eval.setReadOnly(True)
         tech_layout.addWidget(self.tech_eval_lbl)
         tech_layout.addWidget(self.tech_eval, stretch=1)
@@ -932,6 +962,23 @@ class ChatWindow(QMainWindow):
 
     # (subtopic handlers removed)
 
+    def on_popper_toggle_center(self, state: int):
+        show = state != 0
+        # hide/show the entire middle panel; splitter will resize bottom automatically
+        self.pop_center_box.setVisible(show)
+        if show:
+            # restore a reasonable size distribution
+            try:
+                self.pop_splitter.setSizes([300, max(400, self.pop_splitter.height() - 300)])
+            except Exception:
+                pass
+        else:
+            # collapse middle panel so Evaluation gets space
+            try:
+                self.pop_splitter.setSizes([0, max(1, self.pop_splitter.height() - 0)])
+            except Exception:
+                pass
+
     # --- Popper Challenge actions ---
     def on_popper_synthesize(self):
         try:
@@ -1385,6 +1432,8 @@ class ChatWindow(QMainWindow):
             self.pop_selfcrit_btn.setText(tx("popper_eval_selfcrit", "Evaluate my critique"))
             self.pop_confirm_btn.setText(tx("popper_confirm", "Brutal AI critique"))
             self.pop_result_lbl.setText(tx("popper_result", "Evaluation"))
+            if hasattr(self, 'pop_center_toggle'):
+                self.pop_center_toggle.setText(tx("popper_toggle_center", "Show middle panel"))
         except Exception:
             pass
         # Tech Skeptic texts and lists
