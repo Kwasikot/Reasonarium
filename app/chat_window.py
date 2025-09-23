@@ -20,6 +20,10 @@ from app.audio_recorder import AudioRecorder
 from app.local_stt import transcribe_whisper
 from llm.ollama_client import OllamaClient
 from app.debate_topic_dialog import DebateTopicDialog
+try:
+    import curiosity_drive_node as cdn  # disciplines/subtopics lists
+except Exception:
+    cdn = None  # type: ignore
 
 
 class StreamWorker(QObject):
@@ -216,6 +220,8 @@ class ChatWindow(QMainWindow):
         mic_row = QHBoxLayout()
         self.mic_label = QLabel("Microphone")
         self.mic_combo = QComboBox()
+        self.whisper_label = QLabel("Whisper")
+        self.whisper_combo = QComboBox()
         self.whisper_label = QLabel("Whisper model")
         self.whisper_combo = QComboBox()
         self.record_btn = QPushButton("Record")
@@ -946,28 +952,14 @@ class ChatWindow(QMainWindow):
         if dev_index is None:
             QMessageBox.warning(self, "Audio", "No input device available.")
             return
-        # For Ollama engine, start streaming Whisper listener (no commands, just STT)
-        if self.engine_combo.currentText().strip().lower() == "ollama":
-            def on_phrase(txt: str):
-                from PyQt6.QtCore import QTimer
-                QTimer.singleShot(0, lambda: self._append_stt_text(txt))
-            lang_hint = 'ru' if (self.lang or '').lower() == 'ru' else 'en'
-            try:
-                whisper_model = (self.whisper_combo.currentText() or os.getenv('WHISPER_MODEL') or 'base')
-                self._recorder = WhisperStream(on_text=on_phrase, model=whisper_model, samplerate=16000, device=int(dev_index), language=lang_hint)  # type: ignore
-                self._recorder.start()
-                self.record_btn.setText(self._t("stop", "Stop"))
-            except Exception as e:
-                self._recorder = None
-                QMessageBox.critical(self, "Audio", f"Cannot start whisper stream: {e}")
-        else:
-            try:
-                self._recorder = AudioRecorder(device=int(dev_index), samplerate=16000, channels=1)  # type: ignore
-                self._recorder.start()
-                self.record_btn.setText(self._t("stop", "Stop"))
-            except Exception as e:
-                self._recorder = None
-                QMessageBox.critical(self, "Audio", f"Cannot start recording: {e}")
+        # Start simple recorder (Whisper transcription on stop for Ollama)
+        try:
+            self._recorder = AudioRecorder(device=int(dev_index), samplerate=16000, channels=1)  # type: ignore
+            self._recorder.start()
+            self.record_btn.setText(self._t("stop", "Stop"))
+        except Exception as e:
+            self._recorder = None
+            QMessageBox.critical(self, "Audio", f"Cannot start recording: {e}")
 
     # No QtMultimedia streaming callback; handled by AudioRecorder
 
@@ -1102,6 +1094,20 @@ class ChatWindow(QMainWindow):
         target = env_default or (xml_default or current) or "gpt-4o-mini"
         self.model_combo.setEditText(target)
         self.model_combo.blockSignals(False)
+
+    def _populate_whisper_models(self):
+        try:
+            models = ["tiny", "base", "small", "medium", "large-v2"]
+            env_default = os.getenv("WHISPER_MODEL", "base")
+            self.whisper_combo.blockSignals(True)
+            self.whisper_combo.clear()
+            self.whisper_combo.addItems(models)
+            # pick env default if present
+            if env_default in models:
+                self.whisper_combo.setCurrentText(env_default)
+            self.whisper_combo.blockSignals(False)
+        except Exception:
+            pass
 
     def _populate_whisper_models(self):
         models = self.settings.whisper_models() if self.settings.ok() else []
