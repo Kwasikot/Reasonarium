@@ -686,17 +686,20 @@ class ChatWindow(QMainWindow):
         temp = float(self.temp_spin.value())
         if (self.lang or '').lower() == 'ru':
             prompt = (
-                "Синтезируй короткую (6–10 предложений) научно‑ориентированную теорию по дисциплинам "
-                f"{d1}{' и ' + d2 if d2 else ''}, объясняющую реальное явление. "
-                "Требования: 1) сформулируй минимум 2 чётких предсказания, 2) укажи потенциальные эксперименты/наблюдения, "
-                "которые могли бы опровергнуть теорию, 3) отметь, какие её части нефальсифицируемы и почему это проблема."
+                "Синтезируй ЛЮБУЮ теорию по дисциплинам "
+                f"{d1}{' и ' + d2 if d2 else ''}, объясняющую реальное или воображаемое явление. "
+                "Теория может быть сколь угодно простой, абсурдной или сказочной (например: «Яблоки круглые, потому что так "
+                "захотела Алиса в Стране чудес»). Затем добавь: (1) минимум 2 проверяемых предсказания; (2) возможные "
+                "эксперименты/наблюдения, которые могли бы опровергнуть теорию; (3) укажи нефальсифицируемые части. "
+                "Формат: кратко изложи теорию (3–6 предложений), затем списки A) Предсказания, B) Эксперименты, C) Нефальсифицируемое."
             )
         else:
             prompt = (
-                "Synthesize a short (6–10 sentences) science‑oriented theory in "
-                f"{d1}{' and ' + d2 if d2 else ''} that explains a real‑world phenomenon. "
-                "Requirements: (1) list at least 2 clear testable predictions, (2) propose experiments/observations "
-                "that could falsify the theory, (3) highlight any unfalsifiable parts and why that is problematic."
+                "Synthesize ANY theory in "
+                f"{d1}{' and ' + d2 if d2 else ''} explaining a real or imaginary phenomenon. The theory may be trivial, "
+                "whimsical or absurd (e.g., ‘Apples are round because Alice wished so’). Then add: (1) at least 2 testable "
+                "predictions; (2) possible experiments/observations that could falsify it; (3) note unfalsifiable parts. "
+                "Format: a short theory (3–6 sentences) followed by lists A) Predictions, B) Experiments, C) Unfalsifiable."
             )
         try:
             if eng == 'openai':
