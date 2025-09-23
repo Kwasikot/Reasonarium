@@ -379,6 +379,52 @@ class ChatWindow(QMainWindow):
         self.tabs.addTab(pop_tab, "Popper Challenge")
         # (No subtopic comboboxes; only disciplines)
 
+        # --- Tech Skeptic Mode tab ---
+        tech_tab = QWidget()
+        tech_layout = QVBoxLayout(tech_tab)
+        tech_controls = QHBoxLayout()
+        tech_layout.addLayout(tech_controls)
+        self.tech_disc_lbl = QLabel("Discipline")
+        self.tech_disc_combo = QComboBox()
+        self.tech_edu_lbl = QLabel("Education level")
+        self.tech_edu_combo = QComboBox()
+        self.tech_synth_btn = QPushButton("Synthesize technology description")
+        self.tech_synth_btn.clicked.connect(self.on_tech_synth)
+        tech_controls.addWidget(self.tech_disc_lbl)
+        tech_controls.addWidget(self.tech_disc_combo)
+        tech_controls.addWidget(self.tech_edu_lbl)
+        tech_controls.addWidget(self.tech_edu_combo)
+        tech_controls.addWidget(self.tech_synth_btn)
+
+        self.tech_desc_lbl = QLabel("Technology description")
+        self.tech_desc = QPlainTextEdit()
+        self.tech_desc.setReadOnly(True)
+        tech_layout.addWidget(self.tech_desc_lbl)
+        tech_layout.addWidget(self.tech_desc, stretch=1)
+
+        self.tech_usercrit_lbl = QLabel("Your criticism")
+        self.tech_usercrit = QPlainTextEdit()
+        tech_layout.addWidget(self.tech_usercrit_lbl)
+        tech_layout.addWidget(self.tech_usercrit)
+
+        tech_buttons = QHBoxLayout()
+        tech_layout.addLayout(tech_buttons)
+        self.tech_analyze_btn = QPushButton("Analyze my criticism")
+        self.tech_analyze_btn.clicked.connect(self.on_tech_analyze)
+        self.tech_brutal_btn = QPushButton("Brutal AI critique of technology")
+        self.tech_brutal_btn.clicked.connect(self.on_tech_brutal)
+        tech_buttons.addStretch(1)
+        tech_buttons.addWidget(self.tech_analyze_btn)
+        tech_buttons.addWidget(self.tech_brutal_btn)
+
+        self.tech_eval_lbl = QLabel("Evaluation")
+        self.tech_eval = QPlainTextEdit()
+        self.tech_eval.setReadOnly(True)
+        tech_layout.addWidget(self.tech_eval_lbl)
+        tech_layout.addWidget(self.tech_eval, stretch=1)
+
+        self.tabs.addTab(tech_tab, "Tech Skeptic Mode")
+
     def _load_prompts(self):
         # Fallback scanner if settings are not used
         from app.prompts_loader import list_prompt_files
@@ -1262,6 +1308,34 @@ class ChatWindow(QMainWindow):
             self.pop_result_lbl.setText(tx("popper_result", "Evaluation"))
         except Exception:
             pass
+        # Tech Skeptic texts and lists
+        try:
+            self.tabs.setTabText(3, tx("tab_techskeptic", "Tech Skeptic Mode"))
+            self.tech_disc_lbl.setText(tx("tech_disc", "Discipline"))
+            self.tech_edu_lbl.setText(tx("tech_edu", "Education level"))
+            self.tech_synth_btn.setText(tx("tech_synth", "Synthesize technology description"))
+            self.tech_desc_lbl.setText(tx("tech_desc", "Technology description"))
+            self.tech_usercrit_lbl.setText(tx("tech_usercrit", "Your criticism"))
+            self.tech_analyze_btn.setText(tx("tech_analyze", "Analyze my criticism"))
+            self.tech_brutal_btn.setText(tx("tech_brutal", "Brutal AI critique of technology"))
+            self.tech_eval_lbl.setText(tx("tech_eval", "Evaluation"))
+            discs = self._load_tech_disciplines()
+            edus = ["School", "Undergraduate", "Graduate", "PhD"] if (self.lang or '').lower() == 'en' else ["Школа","Бакалавриат","Магистратура","Аспирантура / PhD"]
+            self.tech_disc_combo.blockSignals(True)
+            self.tech_disc_combo.clear()
+            if discs:
+                self.tech_disc_combo.addItems(discs)
+            if self.tech_disc_combo.count() > 0 and not (self.tech_disc_combo.currentText() or '').strip():
+                self.tech_disc_combo.setCurrentIndex(0)
+            self.tech_disc_combo.blockSignals(False)
+            self.tech_edu_combo.blockSignals(True)
+            self.tech_edu_combo.clear()
+            self.tech_edu_combo.addItems(edus)
+            if self.tech_edu_combo.count() > 0 and not (self.tech_edu_combo.currentText() or '').strip():
+                self.tech_edu_combo.setCurrentIndex(0)
+            self.tech_edu_combo.blockSignals(False)
+        except Exception:
+            pass
         # Curiosity labels (form created with static labels; adjust)
         self.cd_lbl_disciplines.setText(tx("cd_disciplines", "Disciplines"))
         self.cd_lbl_audience.setText(tx("cd_audience", "Audience"))
@@ -1405,6 +1479,27 @@ class ChatWindow(QMainWindow):
     def _t(self, key: str, fallback: Optional[str] = None) -> str:
         t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
         return t.get(key) or fallback or key
+
+    def _load_tech_disciplines(self) -> List[str]:
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'tech_disciplines.md')
+        if not os.path.exists(path):
+            # fallback minimal list
+            return [
+                'Mechanical Engineering', 'Electrical Engineering & Computer Science', 'Physics', 'Chemistry', 'Biology'
+            ]
+        out: List[str] = []
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    s = line.strip()
+                    if not s or s.startswith('#'):
+                        continue
+                    # skip section headers (no spaces), but keep plain items
+                    out.append(s)
+        except Exception:
+            return out
+        # filter out group titles that contain '/' and no spaces? keep all entries; UI will show all
+        return out
 
     def on_model_changed(self, text: str):
         name = (text or "").strip()
