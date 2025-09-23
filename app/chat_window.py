@@ -684,23 +684,16 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
-        if (self.lang or '').lower() == 'ru':
-            prompt = (
-                "Синтезируй ЛЮБУЮ теорию по дисциплинам "
-                f"{d1}{' и ' + d2 if d2 else ''}, объясняющую реальное или воображаемое явление. "
-                "Теория может быть сколь угодно простой, абсурдной или сказочной (например: «Яблоки круглые, потому что так "
-                "захотела Алиса в Стране чудес»). Затем добавь: (1) минимум 2 проверяемых предсказания; (2) возможные "
-                "эксперименты/наблюдения, которые могли бы опровергнуть теорию; (3) укажи нефальсифицируемые части. "
-                "Формат: кратко изложи теорию (3–6 предложений), затем списки A) Предсказания, B) Эксперименты, C) Нефальсифицируемое."
-            )
-        else:
-            prompt = (
-                "Synthesize ANY theory in "
-                f"{d1}{' and ' + d2 if d2 else ''} explaining a real or imaginary phenomenon. The theory may be trivial, "
-                "whimsical or absurd (e.g., ‘Apples are round because Alice wished so’). Then add: (1) at least 2 testable "
-                "predictions; (2) possible experiments/observations that could falsify it; (3) note unfalsifiable parts. "
-                "Format: a short theory (3–6 sentences) followed by lists A) Predictions, B) Experiments, C) Unfalsifiable."
-            )
+        domain_str = f"{d1}{' and ' + d2 if d2 else ''}".strip()
+        prompt = (
+            "Synthesize a short science-oriented theory (3–6 sentences) in a randomly chosen domain "
+            f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
+            "Then add three sections:\n"
+            "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
+            "B) Experiments/Observations — possible ways to falsify these predictions.\n"
+            "C) Unfalsifiable — identify any parts of the theory that cannot be tested, and explain why that is problematic.\n\n"
+            "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
+        )
         try:
             if eng == 'openai':
                 if self.openai_client is None:
