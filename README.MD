@@ -25,6 +25,12 @@ Features
 - A/B highlighting in assistant replies (A: yellow counterargument, B: green question)
 - Keyboard: Ctrl+Enter to send
 
+Popper Challenge (short)
+- Train falsification per Karl Popper.
+- Pick Discipline A (optional B). Choose theory type (Trivial → Advanced) and education level (School → PhD).
+- App synthesizes a short theory (any style, even whimsical), then you propose a falsification attempt.
+- LLM evaluates your attempt on three criteria: predictions, falsifiable experiments, unfalsifiable parts — and gives a brief score.
+
 Configuration (XML)
 - `settings/reasonarium_settings.xml`
   - UI texts (EN/RU), prompt files per language
