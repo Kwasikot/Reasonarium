@@ -1517,30 +1517,20 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
-        if (self.lang or '').lower() == 'ru':
-            prompt = (
-                "Оцени критическое мышление пользователя на основе его критики теории. Сначала — теория, затем критика/эксперименты. "
-                "Признай сильные стороны, но ищи очевидные и неочевидные уязвимости. Структурируй ответ заголовками:\n\n"
-                "Плюсы критики:\n- ...\n\n"
-                "Минусы критики:\n- ...\n\n"
-                "Чего не хватает в критике:\n- ...\n\n"
-                "Когнитивные искажения:\n- ...\n\n"
-                "Психиатрическая перспектива:\n- ...\n\n"
-                "Заверши краткой суммарной оценкой (1–10) и рекомендациями по улучшению.\n\n"
-                f"Теория:\n{theory}\n\nКритика/эксперименты пользователя:\n{usercrit}"
-            )
-        else:
-            prompt = (
-                "Evaluate the user's critical thinking based on their critique of the theory. First comes the theory, then the user's critique/experiments. "
-                "Acknowledge strengths, but hunt for both obvious and subtle weaknesses. Structure the answer with headings:\n\n"
-                "Strengths of the critique:\n- ...\n\n"
-                "Weaknesses of the critique:\n- ...\n\n"
-                "What is missing:\n- ...\n\n"
-                "Cognitive biases detected:\n- ...\n\n"
-                "Psychiatric perspective (potential thinking pitfalls):\n- ...\n\n"
-                "Finish with a brief overall score (1–10) and concrete suggestions for improvement.\n\n"
-                f"Theory:\n{theory}\n\nUser critique/experiments:\n{usercrit}"
-            )
+        lang_map = {"ru": "Russian", "en": "English"}
+        lang_name = lang_map.get((self.lang or '').lower(), (self.lang or 'English'))
+        prompt = (
+            f"Respond strictly in {lang_name}. Translate all headings into {lang_name}.\n\n"
+            "Evaluate the user's critical thinking based on their critique/experiments about the theory. "
+            f"Structure the response with these headings (use {lang_name} names):\n\n"
+            "Strengths of the critique:\n- ...\n\n"
+            "Weaknesses of the critique:\n- ...\n\n"
+            "What is missing:\n- ...\n\n"
+            "Cognitive biases detected:\n- ...\n\n"
+            "Psychiatric perspective (potential thinking pitfalls):\n- ...\n\n"
+            "Finish with a brief overall score (1–10) and concrete suggestions for improvement.\n\n"
+            f"Theory:\n{theory}\n\nUser critique/experiments:\n{usercrit}"
+        )
         try:
             gen_factory = self._make_prompt_stream_factory(prompt)
             self._stream_text_to_edit(self.pop_result, gen_factory)
