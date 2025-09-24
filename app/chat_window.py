@@ -846,6 +846,15 @@ class ChatWindow(QMainWindow):
     def _compose_system_prompt(self) -> str:
         # Ensure topic is substituted if template contains a placeholder
         base = self.current_system_prompt or ""
+        # Prepend language directive for selected prompt ids
+        pid = self._get_selected_prompt_id()
+        if pid in {"virtual_opponent", "aggressive_opponent", "philosophy_reflection", "rationality_drive"}:
+            ln = self._lang_name()
+            head = f"Respond strictly in {ln}.\n\n"
+            # Avoid duplicating if author already included similar directive
+            low = base.strip().lower()
+            if not low.startswith("respond strictly in "):
+                base = head + base
         return self._ensure_prompt_topic(base)
 
     # UI helpers
@@ -1039,6 +1048,7 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
+        ln = self._lang_name()
         if (self.lang or '').lower() == 'ru':
             prompt = (
                 f"Respond strictly in {ln}.\n\n"

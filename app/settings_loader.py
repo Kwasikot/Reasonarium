@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 DEFAULT_PATH = os.path.join("settings", "reasonarium_settings.xml")
+UI_TEXTS_PATH = os.path.join("settings", "ui_texts_translations.xml")
 
 
 class Settings:
@@ -50,14 +51,42 @@ class Settings:
 
     # UI texts
     def ui_texts(self, lang: str) -> Dict[str, str]:
-        root = self._root
         out: Dict[str, str] = {}
+        # Prefer external translations file
+        if os.path.exists(UI_TEXTS_PATH):
+            try:
+                tree = ET.parse(UI_TEXTS_PATH)
+                ui = tree.getroot()
+                # find best match
+                best = None
+                for lnode in ui.findall("lang"):
+                    if (lnode.get("code") or "").lower() == (lang or "").lower():
+                        best = lnode
+                        break
+                if best is None:
+                    # fallback to English, else first
+                    for lnode in ui.findall("lang"):
+                        if (lnode.get("code") or "").lower() == "en":
+                            best = lnode
+                            break
+                    if best is None:
+                        best = ui.find("lang")
+                if best is not None:
+                    for t in best.findall("text"):
+                        k = t.get("key") or ""
+                        v = (t.text or "").strip()
+                        if k:
+                            out[k] = v
+                    return out
+            except Exception:
+                pass
+        # Fallback: legacy inline ui_texts in reasonarium_settings.xml
+        root = self._root
         if root is None:
             return out
         ui = root.find("ui_texts")
         if ui is None:
             return out
-        # find best match
         best = None
         for lnode in ui.findall("lang"):
             if (lnode.get("code") or "").lower() == (lang or "").lower():

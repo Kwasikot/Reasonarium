@@ -3,170 +3,145 @@
   <languages default="en">
     <lang code="en" name="English"/>
     <lang code="ru" name="Русский"/>
+    <lang code="es" name="Español"/>
+    <lang code="zh" name="中文"/>
+    <lang code="hi" name="हिन्दी"/>
+    <lang code="ar" name="العربية"/>
+    <lang code="pt" name="Português"/>
+    <lang code="fr" name="Français"/>
+    <lang code="de" name="Deutsch"/>
+    <lang code="ja" name="日本語"/>
+    <lang code="ko" name="한국어"/>
+    <lang code="it" name="Italiano"/>
+    <lang code="tr" name="Türkçe"/>
+    <lang code="pl" name="Polski"/>
+    <lang code="nl" name="Nederlands"/>
+    <lang code="uk" name="Українська"/>
+    <lang code="vi" name="Tiếng Việt"/>
+    <lang code="id" name="Bahasa Indonesia"/>
+    <lang code="th" name="ไทย"/>
+    <lang code="fa" name="فارسی"/>
+    <lang code="he" name="עברית"/>
+    <lang code="sv" name="Svenska"/>
+    <lang code="no" name="Norsk"/>
+    <lang code="da" name="Dansk"/>
+    <lang code="fi" name="Suomi"/>
+    <lang code="cs" name="Čeština"/>
+    <lang code="sk" name="Slovenčina"/>
+    <lang code="ro" name="Română"/>
+    <lang code="bg" name="Български"/>
+    <lang code="el" name="Ελληνικά"/>
+    <lang code="hu" name="Magyar"/>
+    <lang code="sr" name="Српски"/>
+    <lang code="hr" name="Hrvatski"/>
+    <lang code="sl" name="Slovenščina"/>
+    <lang code="lv" name="Latviešu"/>
+    <lang code="lt" name="Lietuvių"/>
+    <lang code="et" name="Eesti"/>
+    <lang code="ms" name="Bahasa Melayu"/>
+    <lang code="bn" name="বাংলা"/>
+    <lang code="ur" name="اردو"/>
+    <lang code="ta" name="தமிழ்"/>
+    <lang code="te" name="తెలుగు"/>
+    <lang code="mr" name="मराठी"/>
+    <lang code="gu" name="ગુજરાતી"/>
+    <lang code="kn" name="ಕನ್ನಡ"/>
+    <lang code="ml" name="മലയാളം"/>
+    <lang code="pa" name="ਪੰਜਾਬੀ"/>
+    <lang code="ne" name="नेपाली"/>
+    <lang code="si" name="සිංහල"/>
+    <lang code="my" name="မြန်မာ"/>
+    <lang code="km" name="ភាសាខ្មែរ"/>
+    <lang code="lo" name="ລາວ"/>
+    <lang code="az" name="Azərbaycanca"/>
+    <lang code="kk" name="Қазақ тілі"/>
+    <lang code="uz" name="Oʻzbekcha"/>
+    <lang code="tg" name="Тоҷикӣ"/>
+    <lang code="hy" name="Հայերեն"/>
+    <lang code="ka" name="ქართული"/>
+    <lang code="am" name="Amharic"/>
+    <lang code="sw" name="Kiswahili"/>
+    <lang code="zu" name="isiZulu"/>
+    <lang code="xh" name="isiXhosa"/>
+    <lang code="af" name="Afrikaans"/>
+    <lang code="ha" name="Hausa"/>
+    <lang code="yo" name="Yorùbá"/>
+    <lang code="ig" name="Igbo"/>
+    <lang code="so" name="Soomaali"/>
+    <lang code="ps" name="پښتو"/>
+    <lang code="ku" name="Kurdî"/>
+    <lang code="ky" name="Кыргызча"/>
+    <lang code="mn" name="Монгол"/>
+    <lang code="tk" name="Türkmençe"/>
+    <lang code="sq" name="Shqip"/>
+    <lang code="mk" name="Македонски"/>
+    <lang code="bs" name="Bosanski"/>
+    <lang code="is" name="Íslenska"/>
+    <lang code="ga" name="Gaeilge"/>
+    <lang code="cy" name="Cymraeg"/>
+    <lang code="mt" name="Malti"/>
+    <lang code="lb" name="Lëtzebuergesch"/>
+    <lang code="eu" name="Euskara"/>
+    <lang code="gl" name="Galego"/>
+    <lang code="ca" name="Català"/>
+    <lang code="rm" name="Rumantsch"/>
+    <lang code="br" name="Brezhoneg"/>
+    <lang code="oc" name="Occitan"/>
+    <lang code="qu" name="Quechua"/>
+    <lang code="ay" name="Aymara"/>
+    <lang code="gn" name="Guaraní"/>
+    <lang code="mi" name="Māori"/>
+    <lang code="sm" name="Gagana Sāmoa"/>
+    <lang code="fj" name="Fijian"/>
+    <lang code="wo" name="Wolof"/>
+    <lang code="ti" name="Tigrinya"/>
+    <lang code="bn-IN" name="বাংলা (ভারত)"/>
   </languages>
  
-  <ui_texts>
-    <lang code="en">
-      <text key="language">Language</text>
-      <text key="engine">Engine</text>
-      <text key="model">Model</text>
-      <text key="temp">Temp</text>
-      <text key="api_key">API Key</text>
-      <text key="proxy">Proxy</text>
-      <text key="mode">Mode</text>
-      <text key="prompt">Prompt</text>
-      <text key="reload_prompts">Reload Prompts</text>
-      <text key="start_session">Start Session…</text>
-      <text key="send">Send</text>
-      <text key="new_chat">New Chat</text>
-      <text key="auto_answer">Auto answer</text>
-      <text key="next_question">Next question</text>
-      <text key="prompt_preview">Prompt Preview</text>
-      <text key="tab_chat">Chat</text>
-      <text key="tab_curiosity">Curiosity Drive</text>
-      <text key="tab_popper">Popper Challenge</text>
-      <text key="tab_techskeptic">Tech Skeptic Mode</text>
-      <text key="tech_disc">Discipline</text>
-      <text key="tech_edu">Education level</text>
-      <text key="tech_synth">Synthesize technology description</text>
-      <text key="tech_analyze">Analyze my criticism</text>
-      <text key="tech_brutal">Brutal AI critique of technology</text>
-      <text key="tech_desc">Technology description</text>
-      <text key="tech_usercrit">Your criticism</text>
-      <text key="tech_eval">Evaluation (0-10)</text>
-      <text key="popper_d1">Discipline A</text>
-      <text key="popper_d2">Discipline B</text>
-      <text key="popper_s1">Subtopic A</text>
-      <text key="popper_s2">Subtopic B</text>
-      <text key="popper_synthesize">Synthesize theory</text>
-      <text key="popper_user_attempt">Your falsification attempt</text>
-      <text key="popper_user_experiments">Your experiments / observations / critique</text>
-      <text key="popper_ai_show">Show AI suggestions</text>
-      <text key="popper_ai_experiments">AI experiments / observations</text>
-      <text key="popper_check">Confirm</text>
-      <text key="popper_confirm">Brutal AI critique</text>
-      <text key="popper_eval_selfcrit">Evaluate my critique</text>
-      <text key="popper_result">Evaluation</text>
-      <text key="popper_level_theory">Theory type</text>
-      <text key="popper_level_edu">Education level</text>
-      <text key="voice_mode">Voice mode</text>
-      <text key="speak">Speak…</text>
-      <text key="read_aloud">Read aloud</text>
-      <text key="speech_to_text">Speech to text</text>
-      <text key="record">Record</text>
-      <text key="stop">Stop</text>
-      <text key="microphone">Microphone</text>
-      <text key="whisper_model">Whisper model</text>
-      <text key="cd_generate">Generate</text>
-      <text key="cd_audience">Audience</text>
-      <text key="cd_rarity">Rarity</text>
-      <text key="cd_novelty">Novelty</text>
-      <text key="cd_count">Items</text>
-      <text key="cd_disciplines">Disciplines</text>
-      <text key="topic_virtual">Enter debate topic</text>
-      <text key="topic_aggressive">Enter aggressive debate topic</text>
-      <text key="topic_philo">Enter philosophical topic</text>
-      <text key="topic_generic">Enter topic (optional)</text>
-      <text key="test_openai">Test OpenAI</text>
-      <text key="debate_dialog">Debate Topic</text>
-      <text key="debate_discipline">Discipline</text>
-      <text key="debate_subtopic">Subtopic</text>
-      <text key="debate_generate">Generate</text>
-      <text key="debate_count">Count</text>
-      <text key="debate_custom">Your question / context</text>
-      <text key="debate_ok">OK</text>
-      <text key="debate_cancel">Cancel</text>
-      <!-- Modes (display names) -->
-      <text key="mode.general">General Chat</text>
-      <text key="mode.rationality">Rationality Drive</text>
-      <text key="mode.philosophy">Philosophical Reflection</text>
-      <text key="mode.virtual">Virtual Opponent</text>
-      <text key="mode.aggressive">Aggressive Opponent</text>
-      <text key="mode.curiosity">Curiosity Drive</text>
-      <text key="mode.tech">Technical Reflection</text>
-      <text key="mode.popper">Popper Challenge</text>
-    </lang>
-    <lang code="ru">
-      <text key="language">Язык</text>
-      <text key="engine">Движок</text>
-      <text key="model">Модель</text>
-      <text key="temp">Темп</text>
-      <text key="api_key">API ключ</text>
-      <text key="proxy">Прокси</text>
-      <text key="mode">Режим</text>
-      <text key="prompt">Промт</text>
-      <text key="reload_prompts">Обновить промты</text>
-      <text key="start_session">Начать сессию…</text>
-      <text key="send">Отправить</text>
-      <text key="new_chat">Новый чат</text>
-      <text key="auto_answer">Автоответ</text>
-      <text key="next_question">Следующий вопрос</text>
-      <text key="prompt_preview">Предпросмотр промта</text>
-      <text key="tab_chat">Чат</text>
-      <text key="tab_curiosity">Curiosity Drive</text>
-      <text key="tab_popper">Вызов Поппера</text>
-      <text key="tab_techskeptic">Режим техскептика</text>
-      <text key="tech_disc">Дисциплина</text>
-      <text key="tech_edu">Уровень образования</text>
-      <text key="tech_synth">Синтезировать описание технологии</text>
-      <text key="tech_analyze">Проанализировать мою критику</text>
-      <text key="tech_brutal">Жёсткая ИИ критика технологии</text>
-      <text key="tech_desc">Описание технологии</text>
-      <text key="tech_usercrit">Ваша критика</text>
-      <text key="tech_eval">Оценка (0-10)</text>
-      <text key="popper_d1">Дисциплина A</text>
-      <text key="popper_d2">Дисциплина B</text>
-      <text key="popper_s1">Подтема A</text>
-      <text key="popper_s2">Подтема B</text>
-      <text key="popper_synthesize">Синтезировать теорию</text>
-      <text key="popper_user_attempt">Ваше опровержение</text>
-      <text key="popper_user_experiments">Ваши эксперименты / наблюдения / критика</text>
-      <text key="popper_ai_show">Показать идеи ИИ</text>
-      <text key="popper_ai_experiments">Эксперименты / наблюдения ИИ</text>
-      <text key="popper_check">Подтвердить</text>
-      <text key="popper_confirm">Жёсткая ИИ критика</text>
-      <text key="popper_eval_selfcrit">Оцени мою критику</text>
-      <text key="popper_result">Оценка</text>
-      <text key="popper_level_theory">Тип теории</text>
-      <text key="popper_level_edu">Уровень образования</text>
-      <text key="voice_mode">Голосовой режим</text>
-      <text key="speak">Говорить…</text>
-      <text key="read_aloud">Озвучить</text>
-      <text key="speech_to_text">Речь в текст</text>
-      <text key="record">Запись</text>
-      <text key="stop">Стоп</text>
-      <text key="microphone">Микрофон</text>
-      <text key="whisper_model">Модель Whisper</text>
-      <text key="cd_generate">Сгенерировать</text>
-      <text key="cd_audience">Аудитория</text>
-      <text key="cd_rarity">Редкость</text>
-      <text key="cd_novelty">Новизна</text>
-      <text key="cd_count">Количество</text>
-      <text key="cd_disciplines">Дисциплины</text>
-      <text key="topic_virtual">Введите тему дебатов</text>
-      <text key="topic_aggressive">Введите тему жёстких дебатов</text>
-      <text key="topic_philo">Введите тему философской беседы</text>
-      <text key="topic_generic">Введите тему (опционально)</text>
-      <text key="test_openai">Проверить OpenAI</text>
-      <text key="debate_dialog">Тема дебатов</text>
-      <text key="debate_discipline">Дисциплина</text>
-      <text key="debate_subtopic">Подтема</text>
-      <text key="debate_generate">Сгенерировать</text>
-      <text key="debate_count">Количество</text>
-      <text key="debate_custom">Свой вопрос / Свой контекст</text>
-      <text key="debate_ok">ОК</text>
-      <text key="debate_cancel">Отмена</text>
-      <!-- Modes (display names) -->
-      <text key="mode.general">Обычный чат</text>
-      <text key="mode.rationality">Rationality Drive</text>
-      <text key="mode.philosophy">Философская рефлексия</text>
-      <text key="mode.virtual">Виртуальный оппонент</text>
-      <text key="mode.aggressive">Агрессивный оппонент</text>
-      <text key="mode.curiosity">Curiosity Drive</text>
-      <text key="mode.tech">Техническая рефлексия</text>
-      <text key="mode.popper">Вызов Поппера</text>
-    </lang>
-  </ui_texts>
+ 
+  <whisper_models default="base">
+    <model>tiny</model>
+    <model>base</model>
+    <model>small</model>
+    <model>medium</model>
+    <model>large-v2</model>
+  </whisper_models>
+  <!-- Ollama models fetched via HTTP (runtime). 
+         Your app can GET http://localhost:11434/api/tags and populate this list. -->
+    <ollama endpoint="http://localhost:11434" refresh_on_start="true">
+      <models source="http" url="http://localhost:11434/api/tags"/>
+      <!-- Optional fallback (static examples) -->
+      <fallback_models>
+        <model>llama3.2:latest</model>
+        <model>llama3.1:8b</model>
+        <model>llama3:70b</model>
+        <model>mistral:latest</model>
+        <model>qwen2.5:7b</model>
+        <model>phi3:mini</model>
+      </fallback_models>
+    </ollama>
+
+
+  <openai_models default="gpt-4o-mini">
+    <model>gpt-5</model>
+    <model>gpt-5-mini</model>
+    <model>gpt-5-nano</model>
+    <model>gpt-4o-mini</model>
+    <model>gpt-4o</model>
+    <model>gpt-4.1-mini</model>
+    <model>gpt-4.1</model>
+    <model>o3-mini</model>
+  </openai_models>
+
+  <!-- UI colors -->
+  <colors>
+    <!-- Counterargument (A:) color -->
+    <counterargument>#fbc02d</counterargument>
+    <!-- Question (B:) color; bright lime green by default -->
+    <question>#7CFC00</question>
+  </colors>
+ 
+  <!-- ui_texts moved to settings/ui_texts_translations.xml -->
 
   <prompts>
     <prompt id="virtual_opponent">
@@ -218,45 +193,4 @@
     </lang>
   </disciplines>
 
-  <whisper_models default="base">
-    <model>tiny</model>
-    <model>base</model>
-    <model>small</model>
-    <model>medium</model>
-    <model>large-v2</model>
-  </whisper_models>
-  <!-- Ollama models fetched via HTTP (runtime). 
-         Your app can GET http://localhost:11434/api/tags and populate this list. -->
-    <ollama endpoint="http://localhost:11434" refresh_on_start="true">
-      <models source="http" url="http://localhost:11434/api/tags"/>
-      <!-- Optional fallback (static examples) -->
-      <fallback_models>
-        <model>llama3.2:latest</model>
-        <model>llama3.1:8b</model>
-        <model>llama3:70b</model>
-        <model>mistral:latest</model>
-        <model>qwen2.5:7b</model>
-        <model>phi3:mini</model>
-      </fallback_models>
-    </ollama>
-
-
-  <openai_models default="gpt-4o-mini">
-    <model>gpt-5</model>
-    <model>gpt-5-mini</model>
-    <model>gpt-5-nano</model>
-    <model>gpt-4o-mini</model>
-    <model>gpt-4o</model>
-    <model>gpt-4.1-mini</model>
-    <model>gpt-4.1</model>
-    <model>o3-mini</model>
-  </openai_models>
-
-  <!-- UI colors -->
-  <colors>
-    <!-- Counterargument (A:) color -->
-    <counterargument>#fbc02d</counterargument>
-    <!-- Question (B:) color; bright lime green by default -->
-    <question>#7CFC00</question>
-  </colors>
 </settings>
