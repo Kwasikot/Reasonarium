@@ -1036,18 +1036,24 @@ class ChatWindow(QMainWindow):
         temp = float(self.temp_spin.value())
         if (self.lang or '').lower() == 'ru':
             prompt = (
-                "Оцени предложенные эксперименты/наблюдения с позиций Поппера. Сначала теория, затем список экспериментов. "
-                "Оцени по трём критериям (0–2 балла каждый): (1) есть ли чёткие тестируемые предсказания, к которым привязаны эксперименты; "
-                "(2) действительно ли предложенные эксперименты/наблюдения могут сфальсифицировать предсказания; "
-                "(3) есть ли нефальсифицируемые элементы. Дай краткий разбор и итоговую сумму баллов.\n\n"
-                f"Теория:\n{theory}\n\nЭксперименты/наблюдения пользователя:\n{attempt}"
+                "Проверь только одно: могут ли предложенные пользователем эксперименты/наблюдения потенциально опровергнуть "
+                "(сфальсифицировать) предсказания данной теории. Если текст пользователя не является описанием эксперимента/" 
+                "наблюдения или относится к теме вне рамок теории — явно сообщи, что ты не можешь принять данное описание эксперимента. "
+                "Никаких оценок по баллам не выставляй.\n\n"
+                "Формат ответа:\n"
+                "- Для каждого пункта пользователя: “Валиден для опровержения” или “Невалиден”, затем короткое объяснение почему.\n"
+                "- В конце строкой: “Итого валидных: N”.\n\n"
+                f"Теория:\n{theory}\n\nЭксперименты/наблюдения пользователя (пункты):\n{attempt}"
             )
         else:
             prompt = (
-                "Evaluate the proposed experiments/observations in Popper's terms. The theory is below, then the list of experiments. "
-                "Score three criteria (0–2 each): (1) Are there clear testable predictions that the experiments target? (2) Can the proposed "
-                "experiments/observations actually falsify those predictions? (3) Are there unfalsifiable parts? Provide a brief critique and a total score.\n\n"
-                f"Theory:\n{theory}\n\nUser experiments/observations:\n{attempt}"
+                "Check only this: whether each proposed user experiment/observation could plausibly falsify the predictions of the theory. "
+                "If the user's text is not an experiment/observation description, or it describes something outside the theory's scope, "
+                "explicitly state that you cannot accept this experiment description. Do not assign any scores.\n\n"
+                "Output format:\n"
+                "- For each user item: “Valid for falsification” or “Invalid”, then a brief reason.\n"
+                "- End with a line: “Total valid: N”.\n\n"
+                f"Theory:\n{theory}\n\nUser experiments/observations (items):\n{attempt}"
             )
         try:
             gen_factory = self._make_prompt_stream_factory(prompt)
