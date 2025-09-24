@@ -916,6 +916,7 @@ class ChatWindow(QMainWindow):
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
         ln = self._lang_name()
+        ln = self._lang_name()
         messages = [{"role": "user", "content": prompt}]
         if eng == 'openai':
             if self.openai_client is None:
