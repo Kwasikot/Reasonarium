@@ -915,6 +915,7 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
+        ln = self._lang_name()
         messages = [{"role": "user", "content": prompt}]
         if eng == 'openai':
             if self.openai_client is None:
@@ -996,8 +997,10 @@ class ChatWindow(QMainWindow):
         domain_str = f"{d1}{' and ' + d2 if d2 else ''}".strip()
         lvl_theory = (self.pop_lvl_theory.currentText() or "").strip()
         lvl_edu = (self.pop_lvl_edu.currentText() or "").strip()
+        ln = self._lang_name()
         if (self.lang or '').lower() == 'ru':
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Синтезируй краткую научно‑ориентированную теорию (3–6 предложений) в случайно выбранной области "
                 f"({domain_str}). Теория не должна повторять предыдущие темы (избегай фруктов, деревьев и чрезмерно узких мотивов).\n\n"
                 f"Тип теории: {lvl_theory}. Уровень изложения: {lvl_edu}.\n\n"
@@ -1008,6 +1011,7 @@ class ChatWindow(QMainWindow):
             )
         else:
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Synthesize a short science‑oriented theory (3–6 sentences) in a randomly chosen domain "
                 f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
                 f"Theory type: {lvl_theory}. Education level: {lvl_edu}.\n\n"
@@ -1036,6 +1040,7 @@ class ChatWindow(QMainWindow):
         temp = float(self.temp_spin.value())
         if (self.lang or '').lower() == 'ru':
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Проверь только одно: могут ли предложенные пользователем эксперименты/наблюдения потенциально опровергнуть "
                 "(сфальсифицировать) предсказания данной теории. Если текст пользователя не является описанием эксперимента/" 
                 "наблюдения или относится к теме вне рамок теории — явно сообщи, что ты не можешь принять данное описание эксперимента. "
@@ -1047,6 +1052,7 @@ class ChatWindow(QMainWindow):
             )
         else:
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Check only this: whether each proposed user experiment/observation could plausibly falsify the predictions of the theory. "
                 "If the user's text is not an experiment/observation description, or it describes something outside the theory's scope, "
                 "explicitly state that you cannot accept this experiment description. Do not assign any scores.\n\n"
@@ -1070,9 +1076,11 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
+        ln = self._lang_name()
         if (self.lang or '').lower() == 'ru':
             instr = "Дай максимально честную и конструктивную критику."
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 f"{instr} Оцени валидность предложенных экспериментов в рамках предсказаний данной теории. "
                 "Укажи сильные стороны, логические дыры, риски некорректной интерпретации, и как улучшить дизайн эксперимента.\n\n"
                 f"Теория:\n{theory}\n\nЭксперименты/наблюдения:\n{experiments}"
@@ -1080,6 +1088,7 @@ class ChatWindow(QMainWindow):
         else:
             instr = "Give me the most brutally honest constructive criticism you can."
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 f"{instr} Evaluate whether the proposed experiments are valid within the predictions of the theory. "
                 "Call out strengths, logical holes, risks of misinterpretation, and how to improve the experiment design.\n\n"
                 f"Theory:\n{theory}\n\nExperiments/observations:\n{experiments}"
@@ -1104,13 +1113,16 @@ class ChatWindow(QMainWindow):
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
         temp = float(self.temp_spin.value())
+        ln = self._lang_name()
         if (self.lang or '').lower() == 'ru':
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Предложи 3–6 экспериментальных проверок или наблюдений, которые максимально прямо сфальсифицируют предсказания "
                 "данной теории. Кратко, по одному пункту в строке.\n\nТеория:\n" + theory
             )
         else:
             prompt = (
+                f"Respond strictly in {ln}.\n\n"
                 "Propose 3–6 experimental tests or observations that could most directly falsify the predictions of this theory. "
                 "Keep it concise, one per line.\n\nTheory:\n" + theory
             )
