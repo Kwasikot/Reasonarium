@@ -575,8 +575,18 @@ class ChatWindow(QMainWindow):
             if not ok:
                 return
 
-        # Apply template replacement if present
+        # Apply language directive and template replacement if present
         self._last_topic = (topic or "").strip() or None
+        try:
+            pid = self._get_selected_prompt_id()
+            if pid in {"virtual_opponent", "aggressive_opponent", "philosophy_reflection", "rationality_drive"}:
+                ln = self._lang_name()
+                head = f"Respond strictly in {ln}.\n\n"
+                low = (sys_prompt or "").strip().lower()
+                if not low.startswith("respond strictly in "):
+                    sys_prompt = head + (sys_prompt or "")
+        except Exception:
+            pass
         sys_prompt_applied = self._apply_topic_to_prompt(sys_prompt, topic)
 
         # Reset chat and seed messages
@@ -1046,7 +1056,7 @@ class ChatWindow(QMainWindow):
                 "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability. \n"
                 f"Output language: Respond strictly in {ln}.\n\n"
             )
-            QMessageBox.critical(self, "Popper", f"Synthesis : {prompt}")
+            
         try:
             gen_factory = self._make_prompt_stream_factory(prompt)
             self._stream_text_to_edit(self.pop_theory, gen_factory)
