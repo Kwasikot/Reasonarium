@@ -552,7 +552,7 @@ class ChatWindow(QMainWindow):
                         self.ollama_client = OllamaClient()
                     return self.ollama_client.generate_text(prompt, model=model, temperature=temp)
 
-            dlg = DebateTopicDialog(lang=self.lang, llm_generate_text=_llm_generate_text, parent=self)
+            dlg = DebateTopicDialog(lang=self.lang, llm_generate_text=_llm_generate_text, parent=self, lang_name=self._lang_name())
             # Localize labels
             t = self.settings.ui_texts(self.lang) if self.settings.ok() else {}
             dlg.setWindowTitle(t.get("debate_dialog") or "Debate Topic")

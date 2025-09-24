@@ -16,7 +16,7 @@ except Exception:
 class DebateTopicDialog(QDialog):
     """Dialog to pick discipline/subtopic and fetch 20 controversial questions via LLM."""
 
-    def __init__(self, *, lang: str, llm_generate_text, parent=None):
+    def __init__(self, *, lang: str, llm_generate_text, parent=None, lang_name: Optional[str] = None):
         super().__init__(parent)
         self.setWindowTitle("Debate Topic")
         # Make dialog wider/taller by default
@@ -26,6 +26,8 @@ class DebateTopicDialog(QDialog):
         except Exception:
             pass
         self.lang = (lang or "en").lower()
+        # Human-readable language name for LLM directive
+        self.lang_name = lang_name or ("Русский" if self.lang == 'ru' else "English")
         self.llm_generate_text = llm_generate_text  # callable(prompt:str)->str
         self.selected_question: Optional[str] = None
 
@@ -137,13 +139,15 @@ class DebateTopicDialog(QDialog):
         self.accept()
 
     def _build_prompt(self, disc: str, sub: str, n: int) -> str:
+        prefix = f"Respond strictly in {self.lang_name}.\n\n"
         if self.lang == 'ru':
-            return (
+            body = (
                 f"Выбери наиболее спорные вопросы по дисциплине {disc} и подтеме {sub}. "
                 f"Выбери ровно {n} вопросов. Выведи каждый вопрос с новой строки."
             )
         else:
-            return (
+            body = (
                 f"Pick the most controversial questions for the discipline {disc} and subtopic {sub}. "
                 f"Choose exactly {n} questions. Output one question per line."
             )
+        return prefix + body
