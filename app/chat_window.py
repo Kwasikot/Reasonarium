@@ -735,7 +735,22 @@ class ChatWindow(QMainWindow):
 
     # --- Tech Skeptic actions (streaming) ---
     def _lang_name(self) -> str:
-        return {"ru": "Russian", "en": "English"}.get((self.lang or '').lower(), (self.lang or 'English'))
+        """Return human-readable language name for current UI language code.
+        Uses Settings.languages() mapping; falls back to sensible defaults.
+        """
+        try:
+            code = (self.lang or 'en').lower()
+            langs = self.settings.languages() if self.settings.ok() else [("en", "English"), ("ru", "Русский")]
+            for c, name in langs:
+                if (c or '').lower() == code:
+                    return name or c or 'English'
+            if code == 'en':
+                return 'English'
+            if code == 'ru':
+                return 'Русский'
+            return self.lang or 'English'
+        except Exception:
+            return self.lang or 'English'
 
     def on_tech_synth(self):
         disc = (self.tech_disc_combo.currentText() or "").strip()
@@ -1021,15 +1036,17 @@ class ChatWindow(QMainWindow):
             )
         else:
             prompt = (
-                f"Respond strictly in {ln}.\n\n"
+                
                 "Synthesize a short science‑oriented theory (3–6 sentences) in a randomly chosen domain "
                 f"({domain_str}). The theory should not repeat previous themes (avoid fruits, trees, or overly narrow motifs).\n\n"
                 f"Theory type: {lvl_theory}. Education level: {lvl_edu}.\n\n"
                 "Then add three sections:\n"
                 "A) Predictions — at least 2 clear, testable predictions derived from the theory.\n"
                 "C) Unfalsifiable — identify any parts of the theory that cannot be tested, and explain why that is problematic.\n\n"
-                "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability."
+                "The theory may be serious, playful, whimsical, or absurd — but it must still follow Popper’s criterion of scientific testability. \n"
+                f"Output language: Respond strictly in {ln}.\n\n"
             )
+            QMessageBox.critical(self, "Popper", f"Synthesis : {prompt}")
         try:
             gen_factory = self._make_prompt_stream_factory(prompt)
             self._stream_text_to_edit(self.pop_theory, gen_factory)
