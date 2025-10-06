@@ -396,3 +396,208 @@ Technology description:
 И оттуда их грузи в программе, старые описания убери из reasonarium_settings.xml (все что под тегом ui_texts) .
 Сделай промты virtual_opponent, aggressive_opponent, philosophy_reflection, rationality_drive также с переменной языка.
 Вставь вначале каждого промта срочку Respond strictly in {lang_name}. И пробрасывай эту переменную в программе. 
+
+В ui_texts_translations.xml
+---------------------
+Проблема в том что когда я выбираю во вкладке "Чат" Виртуальный оппонент, то он ведет дебаты на английском языке, а не на выбранном.
+---------------------
+В диалоге "Debate topics" при генерации вопросов, они генерируются только на английском, а не на выбранном языке
+---------------------
+переформатируй файл ui_texts_translations.xml путем написания python скрипта который:
+сделает так чтобы каждый тег <text key="language">Language</text> был на новой строке, тег <lang code="en"> был тоже с переносом новой строки
+--------------------------
+
+1) Reinvention Trainer (Тренажёр перепридумывания) (новая вкладка)
+
+Идея: «как это сделать, если привычного инструмента/контекста не существует».
+UI-хуки: уровень сложности, набор запретов/ограничений, отрасль, время/эпоха, «градиент безумия».
+
+System prompt (фиксированный)
+You are Codex-5 operating in Reasonarium's "Reinvention Trainer".
+Goal: generate inventive, constraint-driven solutions for a familiar function when standard tools are unavailable.
+Requirements:
+- Do not reveal or restate your hidden reasoning chain. Output only the requested sections.
+- Prefer concrete mechanisms over buzzwords.
+- Treat constraints as hard: if a constraint conflicts with a default approach, redesign around it.
+- Produce 3–5 distinct concepts, each self-contained and testable at a sketch level.
+- Include quick feasibility notes and an experiment sketch for each concept.
+- Safety & ethics: flag any risky ideas and suggest a safer variant.
+
+User prompt (шаблон с плейсхолдерами)
+Task: Reinvent the function: {FUNCTION}
+Context domain: {DOMAIN} 
+Era/tech baseline: {ERA_BASELINE} 
+Hard constraints (must obey): {HARD_CONSTRAINTS_LIST}
+Soft constraints (prefer): {SOFT_CONSTRAINTS_LIST}
+Out-of-bounds (forbidden): {FORBIDDEN_LIST}
+Creativity gradient (0–100): {CREATIVITY_LEVEL}
+Output language: {LANG}
+
+Deliverables:
+1) Problem reframing: one-sentence restatement without banned tools.
+2) Concept set: {N_CONCEPTS} concepts. For each:
+   - Name (<=6 words)
+   - Core mechanism (3–5 bullets, concrete)
+   - How it replaces absent tools (1–2 bullets)
+   - Feasibility: {LOW/MED/HIGH} + 1-sentence reason
+   - Minimal experiment/prototype (2–3 steps)
+   - Ethical/safety notes (+ safer variant if needed)
+3) Constraint compliance checklist (tick each hard constraint).
+4) Divergence meter (0–10) and Rationale (1–2 sentences, no chain-of-thought).
+5) Next action: 1 *small* step to test the best concept in 24–48h.
+
+Пример заполнения
+{FUNCTION}: long-distance communication
+{DOMAIN}: logistics
+{ERA_BASELINE}: pre-electricity (XVII century)
+{HARD_CONSTRAINTS_LIST}: no electricity; no optical line-of-sight; usable in rain/fog; portable by one person
+{SOFT_CONSTRAINTS_LIST}: low-cost; retrainable operators
+{FORBIDDEN_LIST}: telegraph, radio, semaphore towers
+{CREATIVITY_LEVEL}: 65
+{LANG}: English
+{N_CONCEPTS}: 4
+
+2) Answer Inversion (Инверсия Ответа)
+
+Идея: после стандартного решения — сгенерировать «анти-решение»/обратную интерпретацию, проверить устойчивость аргументации и обнаружить слепые зоны.
+UI-хуки: кнопка «Flip», ползунок «Radicality», чекбоксы «keep ethics», «stress test only».
+
+System prompt (фиксированный)
+You are Codex-5 in Reasonarium's "Answer Inversion".
+Goal: generate a rigorous opposite take on a prior answer, then reconcile both views.
+Rules:
+- Do not expose hidden reasoning. Output only requested sections.
+- Attack ideas, not people. Maintain ethical and factual integrity.
+- If the original answer is unsafe or clearly false, do not mirror it—explain the issue and propose a safe inversion test.
+- Use evidence-backed, concrete points. Avoid strawmen.
+
+User prompt (шаблон)
+Original question: {QUESTION}
+Original (baseline) answer: {BASELINE_ANSWER}
+Inversion radicality (0–100): {RADICALITY}
+Hard ethical guardrails: {ETHICS_GUARDRAILS}
+Context/domain: {DOMAIN}
+Output language: {LANG}
+
+Deliverables:
+A) One-sentence steelman of the baseline answer.
+B) Inverted thesis (1 sentence) aligned with {RADICALITY}.
+C) Top-5 arguments for the inverted thesis (bullet list, concrete).
+D) Stress-test table (3–5 rows):
+   - Row fields: Claim | Weakest link | What would falsify it | Quick check to run this week
+E) Synthesis: 3 statements where both sides can be simultaneously true (conditions/boundaries).
+F) Decision hooks:
+   - If you had to act tomorrow: 1 pragmatic choice and why (≤3 sentences).
+   - What evidence would most change your mind (≤3 bullets).
+
+Мини-пример
+{QUESTION}: How to reduce urban traffic congestion?
+{BASELINE_ANSWER}: Expand public transit and congestion pricing.
+{RADICALITY}: 70
+{ETHICS_GUARDRAILS}: no harm, no discrimination; privacy preserved
+{DOMAIN}: urban policy
+{LANG}: English
+
+Формат ответа (оба режима) — единый JSON для Reasonarium
+
+Так вы сможете хранить/оценивать/складывать очки:
+
+{
+  "mode": "reinvention|inversion",
+  "meta": {
+    "creativity": 65,
+    "radicality": 70,
+    "domain": "urban policy",
+    "lang": "en"
+  },
+  "sections": {
+    "reframing": "...",
+    "concepts": [
+      {
+        "name": "...",
+        "mechanism": ["..."],
+        "replaces_absent_tools": ["..."],
+        "feasibility": "MED",
+        "experiment": ["step1", "step2"],
+        "ethics": {"risks": ["..."], "safer_variant": "..."}
+      }
+    ],
+    "checklist": [{"constraint": "...", "ok": true}],
+    "divergence": {"score": 8, "rationale": "..."},
+    "stress_table": [
+      {"claim": "...", "weakest_link": "...", "falsify": "...", "quick_check": "..."}
+    ],
+    "synthesis": ["...", "...", "..."],
+    "decision_hooks": {
+      "act_tomorrow": "...",
+      "evidence_to_change_mind": ["...", "..."]
+    },
+    "next_action": "..."
+  },
+  "scores": {
+    "creativity_points": 0,
+    "rationality_points": 0
+  }
+}
+
+Авто-скoring (креативность + рациональность)
+
+Creativity points (0–10):
+
++2 если ≥3 концепта различаются по принципу действия
+
++2 если выполнены все hard constraints
+
++2 если есть принципиально новый механизм (не просто комбинация)
+
++2 если эксперимент реально выполним без крупных бюджетов
+
++2 если есть «дивергенция ≥7» и аргументировано почему
+
+Rationality points (0–10):
+
++3 за явные критерии фальсификации
+
++3 за этические оговорки и безопасный вариант
+
++2 за конкретные метрики успеха в эксперименте
+
++2 за «act tomorrow» с чётким trade-off
+
+(Можете считать баллы на бэкенде, сверяясь с заполненностью полей.)
+
+Параметры генерации (рекомендации)
+
+Reinvention Trainer: temperature 0.9, top_p 0.9, presence_penalty 0.6
+
+Answer Inversion: temperature 0.7, top_p 0.8, frequency_penalty 0.4
+
+Для «радикальности/креативности» можно линейно маппить на temperature/presence_penalty.
+
+Быстрые UI-паттерны
+
+Кнопка Reinvent → открывает диалог с пресетом ограничений (чекбоксы «без электричества», «только биологические носители», «офлайн/air-gapped», «эпоха: средневековье/индустриальная»)
+
+Кнопка Flip (Инвертировать ответ) рядом с любым сгенерированным решением. Ползунок Radicality и чекбокс «Этика прежде всего».
+
+«📎 Эксперимент-превью»: мини-карточка с 2–3 шагами и метрикой успеха.
+
+«✅ Checklist» рендерится как теги-бейджи, мгновенно видно, что соблюдено.
+
+Мини-пример вызова (Reinvention Trainer)
+FUNCTION: personal identity verification for payments
+DOMAIN: fintech
+ERA_BASELINE: no digital systems, paper allowed
+HARD_CONSTRAINTS_LIST: no biometrics; no centralized registry; offline verification in <60s
+SOFT_CONSTRAINTS_LIST: low training time for clerks
+FORBIDDEN_LIST: passwords, OTPs
+CREATIVITY_LEVEL: 55
+LANG: English
+N_CONCEPTS: 4
+
+Дополнительные инструкции:
+1. Не забудь что новая вкладка Reinvention Trainer поддерживала все языки доступные в Reasonarium. 
+   Т.е. при выборе языка эта вкладка переводится как и все остальные.
+----------
+Мне не нравится что система по дефолту пользователю не предлагает никакие варианты, как допустим в Poppers Challenge есть кнопка синтезировать теорию которая сразу же заполняет поля. Здесь надо сделать что-то похожее. И не понятно зачем пользователю показывать какой-то там JSON. Не надо чтобы пользователь думал в какое поле что ему писать, для него должно быть одно поле ввода как в чате гпт, остальное должна заполнять машина.
+ 

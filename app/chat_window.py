@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QTextBrowser, QPlainTextEdit,
     QPushButton, QLabel, QComboBox, QLineEdit, QDoubleSpinBox, QFileDialog, QSplitter,
     QGroupBox, QFormLayout, QMessageBox, QInputDialog, QTabWidget, QSpinBox, QDialog,
-    QTextEdit,
+    QTextEdit, QSlider, QCheckBox,
 )
 from PyQt6.QtCore import QUrl
 
@@ -454,6 +454,73 @@ class ChatWindow(QMainWindow):
         tech_layout.addWidget(self.tech_eval, stretch=1)
 
         self.tabs.addTab(tech_tab, "Tech Skeptic Mode")
+
+        # --- Reinvention Trainer tab ---
+        reinv_tab = QWidget()
+        reinv_layout = QVBoxLayout(reinv_tab)
+        # Single input like chat
+        self.reinv_input_lbl = QLabel("Task / Input")
+        self.reinv_input = QPlainTextEdit()
+        self.reinv_input.setPlaceholderText("Describe what to reinvent and any constraints; leave empty to get a suggested scenario.")
+        reinv_layout.addWidget(self.reinv_input_lbl)
+        reinv_layout.addWidget(self.reinv_input)
+        # Buttons row
+        reinv_btns = QHBoxLayout()
+        self.reinv_suggest_btn = QPushButton("Suggest scenario")
+        self.reinv_suggest_btn.clicked.connect(self.on_reinv_suggest)
+        self.reinv_generate_btn = QPushButton("Generate")
+        self.reinv_generate_btn.clicked.connect(self.on_reinv_generate)
+        self.reinv_show_json = QCheckBox("Show JSON")
+        self.reinv_show_json.stateChanged.connect(lambda s: self.reinv_json.setVisible(s != 0))
+        reinv_btns.addWidget(self.reinv_suggest_btn)
+        reinv_btns.addStretch(1)
+        reinv_btns.addWidget(self.reinv_show_json)
+        reinv_btns.addWidget(self.reinv_generate_btn)
+        reinv_layout.addLayout(reinv_btns)
+        # Output views
+        self.reinv_output_lbl = QLabel("Results")
+        reinv_layout.addWidget(self.reinv_output_lbl)
+        from app.markdown_edit import MarkdownTextEdit as _MTE
+        self.reinv_view = _MTE(render_markdown=True)
+        self.reinv_view.setReadOnly(True)
+        self.reinv_json = QPlainTextEdit()
+        self.reinv_json.setReadOnly(True)
+        self.reinv_json.setVisible(False)
+        reinv_layout.addWidget(self.reinv_view, stretch=2)
+        reinv_layout.addWidget(self.reinv_json, stretch=1)
+        self.tabs.addTab(reinv_tab, "Reinvention Trainer")
+
+        # --- Answer Inversion tab ---
+        inv_tab = QWidget()
+        inv_layout = QVBoxLayout(inv_tab)
+        self.inv_input_lbl = QLabel("Input")
+        self.inv_input = QPlainTextEdit()
+        self.inv_input.setPlaceholderText("Paste the question and baseline answer (or short context). Leave empty to get a suggested setup.")
+        inv_layout.addWidget(self.inv_input_lbl)
+        inv_layout.addWidget(self.inv_input)
+        inv_btns = QHBoxLayout()
+        self.inv_suggest_btn = QPushButton("Suggest inversion")
+        self.inv_suggest_btn.clicked.connect(self.on_invert_suggest)
+        self.inv_generate_btn = QPushButton("Generate")
+        self.inv_generate_btn.clicked.connect(self.on_invert_generate)
+        self.inv_show_json = QCheckBox("Show JSON")
+        self.inv_show_json.stateChanged.connect(lambda s: self.inv_json.setVisible(s != 0))
+        inv_btns.addWidget(self.inv_suggest_btn)
+        inv_btns.addStretch(1)
+        inv_btns.addWidget(self.inv_show_json)
+        inv_btns.addWidget(self.inv_generate_btn)
+        inv_layout.addLayout(inv_btns)
+        self.inv_output_lbl = QLabel("Results")
+        inv_layout.addWidget(self.inv_output_lbl)
+        from app.markdown_edit import MarkdownTextEdit as _MTE2
+        self.inv_view = _MTE2(render_markdown=True)
+        self.inv_view.setReadOnly(True)
+        self.inv_json = QPlainTextEdit()
+        self.inv_json.setReadOnly(True)
+        self.inv_json.setVisible(False)
+        inv_layout.addWidget(self.inv_view, stretch=2)
+        inv_layout.addWidget(self.inv_json, stretch=1)
+        self.tabs.addTab(inv_tab, "Answer Inversion")
 
     def _load_prompts(self):
         # Fallback scanner if settings are not used
@@ -945,6 +1012,38 @@ class ChatWindow(QMainWindow):
         thread.start()
         self._edit_streams[edit] = {'thread': thread, 'worker': worker, 'buffer': buffer}
 
+    def _stream_text_with_callback(self, edit: QPlainTextEdit, gen_factory: Callable[[], Iterator[str]], on_finish: Optional[Callable[[str], None]] = None):
+        # Cancel previous stream for this edit if exists
+        prev = self._edit_streams.get(edit)
+        if prev:
+            try:
+                th = prev.get('thread')
+                if th:
+                    th.quit(); th.wait(100)
+            except Exception:
+                pass
+        edit.clear()
+        buffer: List[str] = []
+        thread = QThread()
+        worker = EditStreamWorker(gen_factory)
+        worker.moveToThread(thread)
+        def on_token(t: str):
+            buffer.append(t)
+            edit.setPlainText(''.join(buffer))
+            edit.moveCursor(QTextCursor.MoveOperation.End)
+        def on_finished():
+            try:
+                if on_finish:
+                    on_finish(''.join(buffer))
+            finally:
+                thread.quit()
+        worker.token.connect(on_token)
+        worker.finished.connect(on_finished)
+        worker.error.connect(lambda e: edit.appendPlainText(f"\n[Error: {e}]"))
+        thread.started.connect(worker.run)
+        thread.start()
+        self._edit_streams[edit] = {'thread': thread, 'worker': worker, 'buffer': buffer}
+
     def _make_prompt_stream_factory(self, prompt: str) -> Callable[[], Iterator[str]]:
         eng = self.engine_combo.currentText().strip().lower()
         model = (self.model_combo.currentText() or None)
@@ -965,6 +1064,25 @@ class ChatWindow(QMainWindow):
             client = self.ollama_client
             def gen():
                 yield from client.stream_chat(messages, model=model, temperature=temp)
+            return gen
+
+    def _make_messages_stream_factory(self, messages: List[Dict[str, str]], temperature: Optional[float] = None) -> Callable[[], Iterator[str]]:
+        eng = self.engine_combo.currentText().strip().lower()
+        model = (self.model_combo.currentText() or None)
+        use_temp = float(self.temp_spin.value()) if temperature is None else float(temperature)
+        if eng == 'openai':
+            if self.openai_client is None:
+                self.openai_client = OpenAIClient()
+            client = self.openai_client
+            def gen():
+                yield from client.stream_chat(messages, model=model, temperature=use_temp)
+            return gen
+        else:
+            if self.ollama_client is None:
+                self.ollama_client = OllamaClient()
+            client = self.ollama_client
+            def gen():
+                yield from client.stream_chat(messages, model=model, temperature=use_temp)
             return gen
 
     def _render_assistant_html(self, text: str) -> str:
@@ -1136,6 +1254,247 @@ class ChatWindow(QMainWindow):
             self._stream_text_to_edit(self.pop_result, gen_factory)
         except Exception as e:
             QMessageBox.critical(self, "Popper", f"Critique failed: {e}")
+
+    # --- Reinvention Trainer: suggest scenario ---
+    def on_reinv_suggest(self, auto_then_generate: bool = False):
+        ln = self._lang_name()
+        prompt = (
+            f"Respond strictly in {ln}.\n\n"
+            "Suggest a concise reinvention scenario in 2–4 lines. Include: function, domain, era/baseline, 2–4 hard constraints, 1–3 soft constraints, and a short forbidden list. Keep it readable to a user (no JSON)."
+        )
+        def on_done(txt: str):
+            self.reinv_input.setPlainText(txt.strip())
+            if auto_then_generate:
+                self.on_reinv_generate()
+        gen = self._make_prompt_stream_factory(prompt)
+        # Stream to a temp hidden edit and then copy over
+        tmp = QPlainTextEdit(); tmp.setVisible(False)
+        self._stream_text_with_callback(tmp, gen, on_finish=on_done)
+
+    # --- Answer Inversion: suggest setup ---
+    def on_invert_suggest(self, auto_then_generate: bool = False):
+        ln = self._lang_name()
+        prompt = (
+            f"Respond strictly in {ln}.\n\n"
+            "Suggest a question and a baseline answer to invert (1–2 sentences each) on a contemporary topic. Output as: 'Original question: ...' on one line and 'Baseline answer: ...' on next line."
+        )
+        def on_done(txt: str):
+            self.inv_input.setPlainText(txt.strip())
+            if auto_then_generate:
+                self.on_invert_generate()
+        gen = self._make_prompt_stream_factory(prompt)
+        tmp = QPlainTextEdit(); tmp.setVisible(False)
+        self._stream_text_with_callback(tmp, gen, on_finish=on_done)
+
+    # --- Formatters for human-readable views ---
+    def _format_reinv_markdown(self, json_text: str) -> str:
+        try:
+            import json as _json
+            data = _json.loads(json_text)
+        except Exception:
+            return ("Could not parse JSON.\n\n" + json_text).strip()
+        sec = data.get('sections') or {}
+        concepts = sec.get('concepts') or []
+        lines: List[str] = []
+        rf = sec.get('reframing') or ''
+        if rf:
+            lines.append(f"Reframing: {rf}")
+        if concepts:
+            lines.append("\nConcepts:")
+            for i, c in enumerate(concepts, 1):
+                name = c.get('name') or f"Concept {i}"
+                lines.append(f"\n- {name}")
+                mech = c.get('mechanism') or []
+                for m in mech[:5]:
+                    lines.append(f"  • {m}")
+                repl = c.get('replaces_absent_tools') or []
+                if repl:
+                    lines.append(f"  Replaces absent tools: {', '.join(repl)}")
+                feas = c.get('feasibility') or ''
+                if feas:
+                    lines.append(f"  Feasibility: {feas}")
+                exp = c.get('experiment') or []
+                if exp:
+                    lines.append("  Experiment: " + " → ".join(exp[:3]))
+                eth = c.get('ethics') or {}
+                risks = eth.get('risks') or []
+                safer = eth.get('safer_variant') or ''
+                if risks:
+                    lines.append(f"  Ethics: risks — {', '.join(risks)}")
+                if safer:
+                    lines.append(f"  Safer variant: {safer}")
+        chk = sec.get('checklist') or []
+        if chk:
+            lines.append("\nChecklist:")
+            for it in chk:
+                c = it.get('constraint') or ''
+                ok = it.get('ok')
+                lines.append(f"- [{'✓' if ok else '✗'}] {c}")
+        div = sec.get('divergence') or {}
+        if div:
+            score = div.get('score')
+            rat = div.get('rationale') or ''
+            lines.append(f"\nDivergence: {score} — {rat}")
+        nxt = sec.get('next_action') or ''
+        if nxt:
+            lines.append(f"\nNext action: {nxt}")
+        return "\n".join(lines).strip()
+
+    def _format_inversion_markdown(self, json_text: str) -> str:
+        try:
+            import json as _json
+            data = _json.loads(json_text)
+        except Exception:
+            return ("Could not parse JSON.\n\n" + json_text).strip()
+        sec = data.get('sections') or {}
+        lines: List[str] = []
+        st = sec.get('steelman') or ''
+        if st:
+            lines.append(f"Steelman: {st}")
+        inv = sec.get('inverted_thesis') or ''
+        if inv:
+            lines.append(f"\nInverted thesis: {inv}")
+        args = sec.get('arguments') or []
+        if args:
+            lines.append("\nTop arguments:")
+            for a in args[:5]:
+                lines.append(f"- {a}")
+        table = sec.get('stress_table') or []
+        if table:
+            lines.append("\nStress test:")
+            for row in table:
+                lines.append(f"- Claim: {row.get('claim','')} | Weakest: {row.get('weakest_link','')} | Falsify: {row.get('falsify','')} | Quick check: {row.get('quick_check','')}")
+        syn = sec.get('synthesis') or []
+        if syn:
+            lines.append("\nSynthesis:")
+            for s in syn:
+                lines.append(f"- {s}")
+        dh = sec.get('decision_hooks') or {}
+        if dh:
+            act = dh.get('act_tomorrow') or ''
+            if act:
+                lines.append(f"\nAct tomorrow: {act}")
+            evid = dh.get('evidence_to_change_mind') or []
+            if evid:
+                lines.append("Evidence to change mind:")
+                for e in evid[:3]:
+                    lines.append(f"- {e}")
+        return "\n".join(lines).strip()
+
+    # --- Reinvention Trainer: prompt build + stream ---
+    def on_reinv_generate(self):
+        user_text = (self.reinv_input.toPlainText() or "").strip()
+        # If empty, auto-suggest
+        if not user_text:
+            return self.on_reinv_suggest(auto_then_generate=True)
+        ln_name = self._lang_name()
+        ln_code = (self.lang or 'en')
+        # Use global temperature control
+        temp = float(self.temp_spin.value())
+        # System prompt
+        sys_prompt = (
+            f"Respond strictly in {ln_name}.\n\n"
+            "You are Codex-5 operating in Reasonarium's \"Reinvention Trainer\".\n"
+            "Goal: generate inventive, constraint-driven solutions for a familiar function when standard tools are unavailable.\n"
+            "Requirements:\n"
+            "- Do not reveal or restate your hidden reasoning chain. Output only the requested sections.\n"
+            "- Prefer concrete mechanisms over buzzwords.\n"
+            "- Treat constraints as hard: if a constraint conflicts with a default approach, redesign around it.\n"
+            "- Produce 3–5 distinct concepts, each self-contained and testable at a sketch level.\n"
+            "- Include quick feasibility notes and an experiment sketch for each concept.\n"
+            "- Safety & ethics: flag any risky ideas and suggest a safer variant.\n"
+            "Output strictly a single JSON object matching the specified schema."
+        )
+        # User prompt
+        user_prompt = (
+            "Format exactly as JSON for Reasonarium. Fields and schema:\n"
+            "{\n"
+            "  \"mode\": \"reinvention\",\n"
+            f"  \"meta\": {{\n    \"creativity\": 65,\n    \"domain\": \"\",\n    \"lang\": \"{self._escape(ln_code)}\"\n  }},\n"
+            "  \"sections\": {\n"
+            "    \"reframing\": \"...\",\n"
+            "    \"concepts\": [\n"
+            "      {\n        \"name\": \"...\",\n        \"mechanism\": [\"...\"],\n        \"replaces_absent_tools\": [\"...\"],\n        \"feasibility\": \"LOW|MED|HIGH\",\n        \"experiment\": [\"step1\", \"step2\"],\n        \"ethics\": {\"risks\": [\"...\"], \"safer_variant\": \"...\"}\n      }\n"
+            "    ],\n"
+            "    \"checklist\": [{\"constraint\": \"...\", \"ok\": true}],\n"
+            "    \"divergence\": {\"score\": 0, \"rationale\": \"...\"},\n"
+            "    \"next_action\": \"...\"\n"
+            "  },\n"
+            "  \"scores\": {\"creativity_points\": 0, \"rationality_points\": 0}\n"
+            "}\n\n"
+            f"Task: Reinvent a function described by the user.\n"
+            f"Free-form user input (may be partial; infer missing fields):\n{user_text}\n\n"
+            "If any fields (function, domain, era, hard/soft constraints, forbidden, creativity, number of concepts) are missing, infer sensible defaults and state assumptions in 'reframing'. Produce 3–5 concepts.\n"
+            f"Output language: {ln_name}\n"
+            f"For safety: do not include dangerous instructions; if any risk appears, provide a safer variant."
+        )
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        gen = self._make_messages_stream_factory(messages, temperature=temp)
+        def _on_finish(txt: str):
+            self.reinv_json.setPlainText(txt)
+            md = self._format_reinv_markdown(txt)
+            self.reinv_view.setPlainText("")
+            self.reinv_view.setPlainText(md)
+        self.reinv_json.clear()
+        self._stream_text_with_callback(self.reinv_json, gen, on_finish=_on_finish)
+
+    # --- Answer Inversion: prompt build + stream ---
+    def on_invert_generate(self):
+        raw = (self.inv_input.toPlainText() or "").strip()
+        if not raw:
+            return self.on_invert_suggest(auto_then_generate=True)
+        # Attempt to infer radicality from global temp
+        radical = int(max(0.0, min(1.0, float(self.temp_spin.value())/2.0)) * 100)
+        ethics = "no harm, no discrimination; privacy preserved"
+        ln_name = self._lang_name()
+        ln_code = (self.lang or 'en')
+        # Use global temperature
+        temp = float(self.temp_spin.value())
+        sys_prompt = (
+            f"Respond strictly in {ln_name}.\n\n"
+            "You are Codex-5 in Reasonarium's \"Answer Inversion\".\n"
+            "Goal: generate a rigorous opposite take on a prior answer, then reconcile both views.\n"
+            "Rules:\n"
+            "- Do not expose hidden reasoning. Output only requested sections.\n"
+            "- Attack ideas, not people. Maintain ethical and factual integrity.\n"
+            "- If the original answer is unsafe or clearly false, do not mirror it—explain the issue and propose a safe inversion test.\n"
+            "- Use evidence-backed, concrete points. Avoid strawmen.\n"
+            "Output strictly a single JSON object matching the specified schema."
+        )
+        user_prompt = (
+            "Format exactly as JSON for Reasonarium. Fields and schema:\n"
+            "{\n"
+            "  \"mode\": \"inversion\",\n"
+            f"  \"meta\": {{\n    \"radicality\": {radical},\n    \"domain\": \"\",\n    \"lang\": \"{self._escape(ln_code)}\"\n  }},\n"
+            "  \"sections\": {\n"
+            "    \"steelman\": \"...\",\n"
+            "    \"inverted_thesis\": \"...\",\n"
+            "    \"arguments\": [\"...\", \"...\"],\n"
+            "    \"stress_table\": [\n      {\"claim\": \"...\", \"weakest_link\": \"...\", \"falsify\": \"...\", \"quick_check\": \"...\"}\n    ],\n"
+            "    \"synthesis\": [\"...\", \"...\"],\n"
+            "    \"decision_hooks\": {\n      \"act_tomorrow\": \"...\",\n      \"evidence_to_change_mind\": [\"...\"]\n    }\n"
+            "  }\n"
+            "}\n\n"
+            f"Original question and baseline answer (free-form input; parse and infer):\n{raw}\n\n"
+            f"Inversion radicality (0–100): {radical}\n"
+            f"Hard ethical guardrails: {ethics}\n"
+            f"Output language: {ln_name}"
+        )
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        gen = self._make_messages_stream_factory(messages, temperature=temp)
+        def _on_finish(txt: str):
+            self.inv_json.setPlainText(txt)
+            md = self._format_inversion_markdown(txt)
+            self.inv_view.setPlainText("")
+            self.inv_view.setPlainText(md)
+        self.inv_json.clear()
+        self._stream_text_with_callback(self.inv_json, gen, on_finish=_on_finish)
 
     def on_popper_ai_toggle(self, state: int):
         show = state != 0
@@ -1518,6 +1877,30 @@ class ChatWindow(QMainWindow):
             if self.tech_edu_combo.count() > 0 and not (self.tech_edu_combo.currentText() or '').strip():
                 self.tech_edu_combo.setCurrentIndex(0)
             self.tech_edu_combo.blockSignals(False)
+        except Exception:
+            pass
+
+        # Reinvention Trainer texts
+        try:
+            self.tabs.setTabText(4, tx("tab_reinvention", "Reinvention Trainer"))
+            self.reinv_input_lbl.setText(tx("reinv_input", "Task / Input"))
+            self.reinv_input.setPlaceholderText(tx("reinv_input_ph", "Describe what to reinvent and any constraints; leave empty to get a suggested scenario."))
+            self.reinv_suggest_btn.setText(tx("reinv_suggest", "Suggest scenario"))
+            self.reinv_generate_btn.setText(tx("reinv_generate_button", "Generate"))
+            self.reinv_show_json.setText(tx("reinv_show_json", "Show JSON"))
+            self.reinv_output_lbl.setText(tx("reinv_output_human", "Results"))
+        except Exception:
+            pass
+
+        # Answer Inversion texts
+        try:
+            self.tabs.setTabText(5, tx("tab_inversion", "Answer Inversion"))
+            self.inv_input_lbl.setText(tx("inv_input", "Input"))
+            self.inv_input.setPlaceholderText(tx("inv_input_ph", "Paste the question and baseline answer (or short context). Leave empty to get a suggested setup."))
+            self.inv_suggest_btn.setText(tx("inv_suggest", "Suggest inversion"))
+            self.inv_generate_btn.setText(tx("inv_generate_button", "Generate"))
+            self.inv_show_json.setText(tx("inv_show_json", "Show JSON"))
+            self.inv_output_lbl.setText(tx("inv_output_human", "Results"))
         except Exception:
             pass
         # Curiosity labels (form created with static labels; adjust)
