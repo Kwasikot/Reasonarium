@@ -861,7 +861,7 @@ class ChatWindow(QMainWindow):
         ln = self._lang_name()
         prompt = (
 f"Respond strictly in {ln}.\n\n"
-"Generate a short description (5–8 sentences) of a fictional device or technology in a randomly chosen discipline "
+"Generate a long description (10 pages) of a fictional device or technology in a randomly chosen discipline "
 f"({disc}).\n\n"
 "The description must follow the chosen Education Level:\n"
 "- School = simple and intuitive explanation\n"
@@ -878,7 +878,7 @@ f"({disc}).\n\n"
 "At higher levels, they should be subtle, technical, and detectable only through careful critical reading.\n\n"
 "Output format:\n"
 "1) Title of the device/technology\n"
-"2) Description (5–8 sentences)\n\n"
+"2) Description (100–200 sentences)\n\n"
 f"Education Level: {edu}"
 
 
