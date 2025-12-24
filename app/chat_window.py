@@ -829,7 +829,8 @@ class ChatWindow(QMainWindow):
         except Exception:
             return self.lang or 'English'
 
-    def on_tech_synth(self):
+
+    def on_tech_synth_v0(self):
         disc = (self.tech_disc_combo.currentText() or "").strip()
         edu = (self.tech_edu_combo.currentText() or "").strip()
         if not disc:
@@ -847,6 +848,35 @@ class ChatWindow(QMainWindow):
             "Important: The description should intentionally include at least 2–3 weak spots (logical flaws, vague claims, overgeneralizations, or unfalsifiable parts) so that the user can practice criticizing it. Make the flaws subtle at higher levels and obvious at lower levels.\n\n"
             "Output format:\n1) Title of the device/technology\n2) Description (5–8 sentences, with hidden weaknesses)\n\n"
             f"Education Level: {edu}"
+        )
+        gen = self._make_prompt_stream_factory(prompt)
+        self._stream_text_to_edit(self.tech_desc, gen)
+
+
+    def on_tech_synth(self):
+        disc = (self.tech_disc_combo.currentText() or "").strip()
+        edu = (self.tech_edu_combo.currentText() or "").strip()
+        if not disc:
+            return
+        ln = self._lang_name()
+        prompt = (
+f"Respond strictly in {ln}.\n\n"
+"Generate a short description (5–8 sentences) of a fictional device or technology in a randomly chosen discipline "
+f"({disc}).\n\n"
+"The description must follow the chosen Education Level:\n"
+"- School = simple and intuitive explanation\n"
+"- Undergraduate = moderately technical\n"
+"- Graduate = advanced and interdisciplinary\n"
+"- PhD = highly technical, jargon-heavy, with references to theories.\n\n"
+"Important: The description must intentionally include at least 2–3 weaknesses that arise from explicit or implicit engineering compromises and trade-offs "
+"(e.g. performance vs. scalability, accuracy vs. energy efficiency, generality vs. robustness, cost vs. reliability). "
+"These weaknesses should reflect limitations of the technology itself, design choices made by the inventor, or constraints imposed by the environment. "
+"At lower education levels, make these trade-offs obvious and intuitive; at higher levels, make them subtle, technical, and embedded in the assumptions or architecture.\n\n"
+"Output format:\n"
+"1) Title of the device/technology\n"
+"2) Description (5–8 sentences, including trade-offs and design compromises)\n\n"
+f"Education Level: {edu}"
+
         )
         gen = self._make_prompt_stream_factory(prompt)
         self._stream_text_to_edit(self.tech_desc, gen)
