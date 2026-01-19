@@ -49,7 +49,10 @@ Configuration (XML)
   - OpenAI model list (shown in UI)
   - Ollama endpoint and model list (HTTP `/api/tags` or `<fallback_models>`) 
 
-#
+# Working with open source models (Ollama)
+
+![image](https://github.com/Kwasikot/Reasonarium/blob/main/img/scr_reasonarium.png)
+
 1. Install Ollama
 Download and install Ollama for your operating system:
 Windows / macOS / Linux:
