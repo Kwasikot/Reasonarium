@@ -49,6 +49,22 @@ Configuration (XML)
   - OpenAI model list (shown in UI)
   - Ollama endpoint and model list (HTTP `/api/tags` or `<fallback_models>`) 
 
+#
+1. Install Ollama
+Download and install Ollama for your operating system:
+Windows / macOS / Linux:
+👉 https://ollama.com/download
+After installation, verify that Ollama is available:
+ollama --version
+If the command prints a version number, Ollama is installed correctly.
+
+2. Select and download Gemma-3 4B Model
+![image](https://github.com/Kwasikot/Reasonarium/blob/main/img/ollama.png)
+Or use pull command to pull the Gemma-3 4B model:
+```
+ollama pull gemma3:4b
+```
+
 Notes
 - Whisper STT (local) is used when Engine=Ollama (requires `ffmpeg`; installs `openai-whisper`). For Engine=OpenAI, STT uses OpenAI.
 - Microphone enumeration uses `sounddevice`; errors and missing devices are printed to console.
